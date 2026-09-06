@@ -477,6 +477,48 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ===== text-fill-banner 字母形焦点预览（迷你复刻前台镂空文字，所见即所得） ===== */
+.tf-focus-stage {
+  width: min(420px, 100%);
+  aspect-ratio: 100 / 30.4; /* 前台字母区：满宽 × 54vh，桌面 16:9 下 ≈ 3.29:1 的宽扁条 */
+  margin: 10px auto 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+}
+.img-focus.dragging .tf-focus-stage { cursor: grabbing; }
+.tf-focus-card { position: absolute; inset: 0; overflow: hidden; border-radius: 10px; }
+.tf-focus-wrap {
+  position: absolute; top: 0; left: 0; right: 0; height: 100%;
+  display: flex; justify-content: center; align-items: flex-start;
+}
+.tf-focus-title {
+  margin: 0;
+  display: inline-block;
+  font-size: 200px;           /* 与前台 render.js 基准字号一致 → 测量结果可直接复用 */
+  line-height: 0.9;
+  white-space: nowrap;
+  text-transform: uppercase;
+  transform-origin: top center;
+  user-select: none;
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  background-size: contain;   /* render 后由 JS 覆盖为反向补偿值 */
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.tf-focus-title.tf-noimg {
+  color: #0a0a0a;
+  background: none;
+  -webkit-text-fill-color: initial;
+}
+
 /* ===== Video preview (uses <video> element to show first frame) ===== */
 .dropzone-preview.dz-video-preview {
   background: #000;
@@ -1211,6 +1253,27 @@ body {
 }
 .form-hint { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+/* ===== 色板选择 Palette（预设色块点选，避免手填 hex） ===== */
+.form-palette { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.form-swatch {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 30px; padding: 0 11px 0 6px;
+  border: 1px solid var(--border-color); border-radius: 999px;
+  background: var(--bg-primary); color: var(--text-secondary);
+  font-size: 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s, color .15s;
+}
+.form-swatch:hover { border-color: var(--accent-color); }
+.form-swatch.on { border-color: var(--accent-color); box-shadow: 0 0 0 1px var(--accent-color); color: var(--text-primary); }
+.form-swatch .sw-dot {
+  width: 16px; height: 16px; border-radius: 50%; flex: none;
+  border: 1px solid rgba(0,0,0,0.18);
+}
+.form-swatch .sw-dot.sw-empty {
+  background: #fff !important;
+  background-image: linear-gradient(135deg, #fff 44%, #c9c9c9 44%, #c9c9c9 56%, #fff 56%) !important;
+}
+.sw-val { font-size: 11px; color: var(--text-muted); margin-left: 2px; word-break: break-all; }
 
 /* ===== Gallery Columns Editor (截图墙分列管理) ===== */
 .gc-wrap {
@@ -2354,6 +2417,7 @@ const TYPE_LABELS = {
   'scene-grid': '场景网格',
   'mockup-banner': '3D样机Banner',
   'ad-banner': '广告Banner',
+  'text-fill-banner': '字图填充Banner',
   'icon-wall': '图标动画墙',
   'device-screen': '设备屏幕嵌入'
 };
@@ -2386,6 +2450,7 @@ const TYPE_DESCS = {
   'scene-grid': '场景网格：居中头 + 场景卡片网格，卡片可新增/删除（来自 scenes）',
   'mockup-banner': '3D 样机首屏：手机/笔记本真 3D 外壳（带厚度侧壁）整圈旋转进场，可叠加标题副标题与背景，手机可 1~2 台、各自设定起止视角',
   'ad-banner': '广告 Banner：大标题整屏出现后从中间上下裂开，露出 16:9 图片无缝跑马灯，上下各挂副标题',
+  'text-fill-banner': '字图填充 Banner：超大字母镂空填充图片贴上半屏（左右切边），副标题大字压住字底，底部说明小字；字体/字距/填充图焦点均可调',
   'icon-wall': '图标动画墙：GIF/APNG/Lottie 动画图标以原始尺寸散落铺满一整屏，可选中心标题与浮动，位置/大小后台可调',
   'device-screen': '设备屏幕嵌入：人物手持样机图（iPad/笔记本，屏幕已抠）上，把设计稿图/视频透视贴合嵌入屏幕。媒体在下层、样机图在上层，手部自然遮挡内容边缘'
 };
@@ -2416,7 +2481,8 @@ const TYPE_ICONS = {
   'product-hero': '<rect x="3" y="4" width="9" height="16" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="14" y="13" width="7" height="7" rx="1"/>',
   'scene-grid': '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="9" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/><rect x="14" y="15" width="7" height="6" rx="1"/>',
   'mockup-banner': '<rect x="8" y="2" width="8" height="20" rx="2"/><line x1="11" y1="5" x2="13" y2="5"/><path d="M3 12a9 9 0 0 1 3-4"/><path d="M21 12a9 9 0 0 0-3-4"/>',
-  'ad-banner': '<rect x="3" y="6" width="18" height="12" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M8 9l-3 3 3 3"/><path d="M16 9l3 3-3 3"/>'
+  'ad-banner': '<rect x="3" y="6" width="18" height="12" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M8 9l-3 3 3 3"/><path d="M16 9l3 3-3 3"/>',
+  'text-fill-banner': '<path d="M4 18V6h2.5l3 7 3-7H15v12h-2.5v-7l-2.5 6h-1l-2.5-6v7H4z"/><rect x="16.5" y="6" width="4" height="12" rx="1" opacity="0.35"/>'
 };
 
 /* ===== 动画背景（animated）：效果与参数 =====
@@ -2621,7 +2687,9 @@ const TYPE_FIELDS = {
         { key: 'title', label: '本图主标题（选填）', type: 'text', placeholder: '本张图的标题' },
         { key: 'labels', label: '本图标签（英文逗号分隔）', type: 'tags', placeholder: '如 50+ employees' },
         { key: 'subtitle', label: '本图描述（选填）', type: 'textarea', placeholder: '本张图的描述文字' }
-      ] }
+      ] },
+    { key: 'scrollEffect', label: '滚动时缩小淡出（视差）', type: 'checkbox', default: false,
+      hint: '页面往下滚动时，背景图/容器随滚动轻微缩小并淡出（nixtio 风格）。默认不勾选：滚动时容器保持原样、不发生缩小变化' }
   ],
   'swipe-slider': [
     { key: 'videoType', label: '背景媒体类型', type: 'select', options: ['slides', 'animated'],
@@ -2989,6 +3057,44 @@ const TYPE_FIELDS = {
     { key: 'bgVideoOverlay', label: '视频遮罩强度（压暗）', type: 'range', min: 0, max: 1, step: 0.05, default: '0.75',
       hint: '滑块调压暗程度，0 = 关闭，0.75 = 默认，1 = 全黑', dependsOn: { field: 'bgType', value: 'video' }, tab: '背景' }
   ],
+  'text-fill-banner': [
+    { key: 'title', label: '大字内容（镂空填图的字母，建议 3~6 个大写字母）', type: 'text', placeholder: 'MINU', tab: '内容',
+      hint: '字母自动拉伸填满上半屏：左右贴边切边、上下填满；字数越多单个字母越窄。下方滑块实时调整字体/字距/宽高' },
+    { key: 'font', label: '字母字体', type: 'select', options: ['limelight', 'anton', 'archivo', 'bebas', 'inter'], default: 'limelight', tab: '内容',
+      optionLabels: { 'limelight': 'Limelight 高对比（推荐，参考图同款风格）', 'anton': 'Anton 均匀粗黑', 'archivo': 'Archivo Black 宽粗黑', 'bebas': 'Bebas Neue 窄长', 'inter': 'Inter Tight 900 中性' },
+      hint: 'Limelight 竖画超粗、斜画极细（Didone 高对比风格）；其余为均匀粗笔画' },
+    { key: 'titleTracking', label: '字母字距', type: 'range', min: -0.12, max: 0.04, step: 0.001, default: -0.045, tab: '内容',
+      hint: '负数收紧（参考图字母几乎相触）、正数拉开；改动后自动重新计算填充' },
+    { key: 'fitWidth', label: '字母宽度（切边）', type: 'range', min: 85, max: 150, step: 1, default: 112, tab: '内容',
+      hint: '100 = 字母完整贴边；112 = 左右各切掉 6%（参考图效果）；越大切越多' },
+    { key: 'fitHeight', label: '字母高度（填满）', type: 'range', min: 80, max: 130, step: 1, default: 100, tab: '内容',
+      hint: '100 = 字母填满上半屏（0~54vh）；微调字母底部与副标题的相对位置' },
+    { key: 'image', label: '填充图片（从字母镂空透出）', type: 'image', focus: true, tfLetterFocus: true, stageRatio: '16/9', tab: '内容',
+      compress: { mode: 'maxSide', side: 2000 },
+      hint: '建议高对比、主体居中（人脸/眼睛落在字母腰部）；下方预览所见即所得，可拖动/缩放' },
+    { key: 'imageMode', label: '填充图颜色', type: 'select', options: ['color', 'bw'], default: 'color', tab: '内容',
+      optionLabels: { 'color': '彩色原图', 'bw': '黑白（去饱和）' },
+      hint: '黑白模式给镂空图去饱和，素材不统一时视觉更整体；彩色保留原图颜色' },
+    { key: 'heading', label: '副标题大字（换行分行）', type: 'textarea', rows: 2, placeholder: "MEET YOUR SKIN'S\nNEW ESSENTIAL", tab: '内容',
+      hint: '字号与字距用下方两个滑块微调' },
+    { key: 'subtitleSize', label: '副标题字号', type: 'range', min: 4, max: 20, step: 0.5, default: 11, tab: '内容',
+      hint: '视口高度百分比：11 ≈ 参考图占比；笔记本/手机会自动等比缩小' },
+    { key: 'subtitleTracking', label: '副标题字距', type: 'range', min: -0.06, max: 0.06, step: 0.001, default: -0.005, tab: '内容',
+      hint: '负数收紧、正数拉开' },
+    { key: 'desc', label: '底部说明小字（左下）', type: 'textarea', rows: 2, placeholder: 'MINU Hydrating Sunscreen Minerals. Real protection. Real feel.', tab: '内容' },
+    { key: 'cardColor', label: '卡片底色', type: 'palette', tab: '样式',
+      palette: [
+        { v: '', t: '默认白' }, { v: '#ffffff', t: '纯白' }, { v: '#f3efe6', t: '奶油' },
+        { v: '#e9e6e0', t: '暖灰' }, { v: '#e6e8ea', t: '浅灰' }, { v: '#0c0d10', t: '墨黑' }, { v: '#000000', t: '纯黑' }
+      ],
+      hint: '点选预设色块即可；默认白底。选深底时记得把「文字颜色」同步选白/浅色' },
+    { key: 'inkColor', label: '文字颜色（副标题/说明）', type: 'palette', tab: '样式',
+      palette: [
+        { v: '', t: '默认黑' }, { v: '#0a0a0a', t: '近黑' }, { v: '#000000', t: '纯黑' },
+        { v: '#ffffff', t: '白' }, { v: '#6b7280', t: '灰' }, { v: '#006fff', t: '品牌蓝' }, { v: '#ff9300', t: '品牌橙' }
+      ],
+      hint: '点选预设色块即可；默认近黑。字母本身的颜色由填充图决定，此项管副标题与底部说明' }
+  ],
   'icon-wall': [
     { key: 'heading', label: '居中标题', type: 'text', placeholder: 'Animated Icons', tab: '内容' },
     { key: 'subheading', label: '居中副标题', type: 'text', placeholder: 'GIF · APNG · Lottie', tab: '内容' },
@@ -3109,6 +3215,10 @@ function getDefaultSection(type) {
       title: 'SELECTED WORKS', subtitleTop: 'Collection Vol.2', subtitleBottom: 'This case contains all the projects, concepts and experiments for the year.',
       titleFont: 'impact', titleSize: '220', titleWeight: '800', titleLineHeight: '1.05', titleLetterSpacing: '-0.03', titleColor: '#ffffff', titleUppercase: '1',
       subtitleSize: '20', subtitleColor: '', subtitleLetterSpacing: '', splitGap: '0', bgType: 'theme', bgColor: '#0c0d10', bgImage: '', bgVideo: '', bgVideoOverlay: '' };
+    case 'text-fill-banner': return { ...base, title: 'MINU', image: '', imageMode: 'color', imageFocus: '50,50,1.5',
+      heading: "MEET YOUR SKIN'S\nNEW ESSENTIAL", desc: 'MINU Hydrating Sunscreen Minerals. Real protection. Real feel.',
+      font: 'limelight', titleTracking: '-0.045', subtitleTracking: '-0.005', subtitleSize: '11',
+      fitWidth: '112', fitHeight: '100', cardColor: '', inkColor: '' };
     case 'icon-wall': return { ...base, heading: '', subheading: '', scatterMode: 'vogel', scatterJitter: '0.15', scatterMinR: '14', scatterMaxR: '40', scatterPad: '12', frame: false, float: true, icons: [] };
     case 'device-screen': return { ...base, deviceImage: '', mediaType: 'image', media: '', videoUrl: '', objectFit: 'cover',
       corners: [{ x: 12, y: 12 }, { x: 88, y: 12 }, { x: 88, y: 76 }, { x: 12, y: 76 }],
@@ -3773,6 +3883,10 @@ function buildCardPreviewText(s) {
       text = '广告Banner：图片 ×' + n + (s.title ? ' · ' + s.title : '');
       break;
     }
+    case 'text-fill-banner': {
+      text = '字图填充：' + (s.title || '（未设大字）') + (s.image ? ' · 有填充图' + (s.imageMode === 'bw' ? '（黑白）' : '') : ' · 无填充图');
+      break;
+    }
     default: text = '（未知类型）';
   }
   if (text && text.length > 80) text = text.slice(0, 80) + '...';
@@ -3866,6 +3980,15 @@ function updateEditorFooterStatus() {
 function renderEditorForm(section) {
   const container = $('#editorFormContainer');
   const rawFields = TYPE_FIELDS[section.type] || [];
+  // text-fill-banner：缺失滑块/下拉字段补默认（仅补 undefined），保证滑块有稳定初始位且与前台缺省一致；
+  // 不扩展到其他组件——其余 range 字段（遮罩等）缺值语义是 0/关闭，不能塞默认
+  if (section.type === 'text-fill-banner') {
+    rawFields.forEach((f) => {
+      if (f.default !== undefined && f.default !== null && section[f.key] === undefined) {
+        section[f.key] = f.default;
+      }
+    });
+  }
   if (!rawFields.length) {
     container.innerHTML = '<div class="form-hint">该类型暂无可编辑字段。</div>';
     return;
@@ -3955,17 +4078,41 @@ function renderEditorForm(section) {
         });
         html += `</select>`;
         break;
+      case 'palette': {
+        // 色板点选：预设色块，点一下写入对应值；'' = 默认（走 CSS 兜底）
+        const pal = f.palette || [];
+        const cur = (val === undefined || val === null) ? '' : String(val);
+        html += `<div class="form-palette" data-bind-key="${esc(f.key)}" data-bind-ftype="palette" id="${fieldUid}">` +
+          pal.map((p) => {
+            const sv = String(p.v || '');
+            const isOn = sv === cur;
+            return `<button type="button" class="form-swatch${isOn ? ' on' : ''}" data-swatch="${esc(sv)}" title="${esc(p.t || sv || '默认')}">` +
+              `<i class="sw-dot${sv ? '' : ' sw-empty'}" style="background:${esc(sv ? (p.bg || p.v) : '#ffffff')}"></i>` +
+              `<span>${esc(p.t || '')}</span></button>`;
+          }).join('') +
+          `<span class="sw-val">${esc(cur || '默认')}</span></div>`;
+        break;
+      }
       case 'range': {
-        // 0~1 强度滑块（如遮罩）：滑块 + 数值实时显示；值 '' / '0' = 0（关闭），旧开关 '1' → 默认 f.default
-        const rv = String(val || '');
-        const rCur = (rv === '' || rv === '1' || rv === 'true' || rv === 'on')
-          ? (rv === '' ? 0 : parseFloat(f.default) || 0.75)
-          : (Math.min(1, Math.max(0, parseFloat(rv) || 0)));
+        // 通用数值滑块：min/max/step 由字段定义，值自动 clamp；右侧数值显示位数随 step 自适应。
+        // 兼容历史：布尔/开关旧值 '1'/'true'/'on' → 映射字段默认强度；空值 → 默认
+        const rmin = f.min != null ? parseFloat(f.min) : 0;
+        const rmax = f.max != null ? parseFloat(f.max) : 1;
+        const rstep = f.step != null ? parseFloat(f.step) : 0.05;
+        const rdef = f.default != null ? parseFloat(f.default) : rmin;
+        const rvRaw = String(val || '');
+        // 空值 = 0/下限（遮罩关闭语义，不塞 default）；历史开关 '1'/'true'/'on' → 映射默认强度
+        let rv = (rvRaw === '' || rvRaw == null) ? rmin
+          : (rvRaw === '1' || rvRaw === 'true' || rvRaw === 'on') ? rdef
+          : parseFloat(rvRaw);
+        if (!Number.isFinite(rv)) rv = rdef;
+        rv = Math.min(rmax, Math.max(rmin, rv));
+        const dec = rstep >= 1 ? 0 : rstep >= 0.1 ? 1 : rstep >= 0.01 ? 2 : rstep >= 0.001 ? 3 : 4;
         html += `<div class="form-range-row">
           <input class="form-range" data-bind-key="${esc(f.key)}" data-bind-ftype="range" type="range"
-            min="${f.min != null ? esc(String(f.min)) : '0'}" max="${f.max != null ? esc(String(f.max)) : '1'}"
-            step="${f.step != null ? esc(String(f.step)) : '0.05'}" value="${rCur}" id="${fieldUid}">
-          <span class="form-range-val">${rCur.toFixed(2)}</span>
+            min="${esc(String(rmin))}" max="${esc(String(rmax))}" step="${esc(String(rstep))}"
+            value="${rv}" id="${fieldUid}">
+          <span class="form-range-val">${Number(rv.toFixed(dec)).toString()}</span>
         </div>`;
         break;
       }
@@ -3990,6 +4137,7 @@ function renderEditorForm(section) {
           sepLabel, focus: f.focus,
           focusValue: String(section[fk] || ''),
           focusKey: fk,
+          tfLetterFocus: f.tfLetterFocus,   // text-fill-banner：字母形所见即所得焦点预览
           stageRatio: isDi ? '1/1' : undefined,
           focusHint: isDi ? '拖动调整显示区域 · 放大后可选局部画面（前台比例 1:1）' : undefined
         });
@@ -4067,11 +4215,17 @@ function renderEditorForm(section) {
     const willRebuild = inp.hasAttribute('data-rebuild-on-change') || inp.getAttribute('data-rebuild-on-change') === 'true';
     const handler = () => {
       if (ftype === 'range') {
-        // 滑块：实时写值 + 更新旁边数值显示（0=关闭）
-        const v = Math.min(1, Math.max(0, parseFloat(inp.value) || 0));
+        // 滑块：按字段 min/max clamp 后实时写值 + 更新数值显示（位数随 step 自适应）
+        const lo = Number.isFinite(parseFloat(inp.min)) ? parseFloat(inp.min) : 0;
+        const hi = Number.isFinite(parseFloat(inp.max)) ? parseFloat(inp.max) : 1;
+        const st = Number.isFinite(parseFloat(inp.step)) ? parseFloat(inp.step) : 0.05;
+        const v = Math.min(hi, Math.max(lo, parseFloat(inp.value) || lo));
         state.sections[selectedIndex][k] = String(v);
         const span = inp.parentElement && inp.parentElement.querySelector('.form-range-val');
-        if (span) span.textContent = v.toFixed(2);
+        if (span) {
+          const dec = st >= 1 ? 0 : st >= 0.1 ? 1 : st >= 0.01 ? 2 : st >= 0.001 ? 3 : 4;
+          span.textContent = Number(v.toFixed(dec)).toString();
+        }
       } else if (ftype === 'tags') {
         state.sections[selectedIndex][k] = inp.value.split(',').map((s) => s.trim()).filter(Boolean);
       } else {
@@ -4105,6 +4259,34 @@ function renderEditorForm(section) {
       setTimeout(() => renderEditorForm(section), 0);
     });
   });
+
+  // 色板 Palette：点击色块写值并高亮（当前值回显也在这里做，兼容外部改值）
+  container.querySelectorAll('[data-bind-ftype="palette"]').forEach((box) => {
+    const k = box.dataset.bindKey;
+    const sync = () => {
+      const v = String((state.sections[selectedIndex] || {})[k] || '');
+      box.querySelectorAll('.form-swatch').forEach((s) => s.classList.toggle('on', String(s.dataset.swatch) === v));
+      const vv = box.querySelector('.sw-val');
+      if (vv) vv.textContent = v || '默认';
+    };
+    box.addEventListener('click', (e) => {
+      const sw = e.target.closest('[data-swatch]');
+      if (!sw) return;
+      state.sections[selectedIndex][k] = sw.dataset.swatch;
+      sync();
+      onSectionChanged();
+    });
+    sync();
+  });
+
+  // text-fill-banner：改 title/font/titleTracking/fitWidth/fitHeight/imageMode/cardColor
+  // → 下方字母形焦点预览即时联动（首次渲染注册一次事件委托，靠 tfShapeSync 校验当前类型）
+  if (section.type === 'text-fill-banner' && !container.dataset.tfSyncBound) {
+    container.dataset.tfSyncBound = '1';
+    container.addEventListener('input', tfShapeSync);
+    container.addEventListener('change', tfShapeSync);
+    container.addEventListener('click', tfShapeSync);
+  }
 
   // Bind image / video / list fields — uid 必须和 render 时传入的一致
   fields.forEach((f) => {
@@ -4168,24 +4350,39 @@ function renderImageFieldWithUrl(key, url, uid, options) {
     // 焦点字段：dropzone（有图时含大图预览）+ 下方焦点面板，包在 .img-field-media 内便于整体替换
     // focusKey：默认 'imageFocus'（showcase/stats）；double-image 双图用 imageFocus1/imageFocus2
     const focusKey = options.focusKey || 'imageFocus';
+    // letterMode：text-fill-banner 专用——焦点面板不是矩形裁切框，
+    // 而是迷你复刻前台镂空文字（形状=字母），拖动/缩放所见即所得
+    const letterMode = !!(options.tfLetterFocus && has);
     const fv = String(options.focusValue || '50,50').trim();
     const m = fv.match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,(-?\d+(?:\.\d+)?))?$/);
     const fx = m ? m[1] : '50';
     const fy = m ? m[2] : '50';
-    const fz = m && m[3] && parseFloat(m[3]) >= 1 ? parseFloat(m[3]).toFixed(1) : '1.0';
-    // 图片初始 100% cover 铺满（JS bindFocusPanel 加载自然尺寸后接管缩放/平移，避免初始跳变）
-    const focusPanel = has ? `
-      <div class="img-focus" data-focus-key="${esc(key)}" data-focus-uid="${esc(uid)}" data-focus-bound="0">
+    const fzDef = letterMode ? '1.5' : '1.0';   // 镂空填图默认 zoom 1.5（参考图全宽铺开）
+    const fz = m && m[3] && parseFloat(m[3]) >= 1 ? parseFloat(m[3]).toFixed(1) : fzDef;
+    const stageHtml = letterMode ? `
+        <div class="tf-focus-stage">
+          <div class="tf-focus-card">
+            <div class="tf-focus-wrap"><h4 class="tf-focus-title"></h4></div>
+          </div>
+        </div>`
+      : `
         <div class="img-focus-stage"${options.stageRatio ? ' style="aspect-ratio:' + esc(options.stageRatio) + ';"' : ''}>
           <img class="img-focus-img" src="${esc(url)}" alt="" draggable="false" style="width:100%;height:100%;object-fit:cover;object-position:0 0;">
-        </div>
+        </div>`;
+    const focusHint = letterMode
+      ? '所见即所得：窗口形状 = 镂空字母。拖动图片把主体对准字母（默认眼睛落在 I/N 竖画）；缩放改变整图显示大小'
+      : (options.focusHint || '拖动调整显示区域 · 放大后可选局部画面');
+    // 图片初始 100% cover 铺满（JS bindFocusPanel 加载自然尺寸后接管缩放/平移，避免初始跳变）
+    const focusPanel = has ? `
+      <div class="img-focus" data-focus-key="${esc(key)}" data-focus-uid="${esc(uid)}" data-focus-bound="0" data-letter-focus="${letterMode ? '1' : ''}">
+        ${stageHtml}
         <input type="hidden" data-bind-key="${esc(focusKey)}" data-ftype="image-focus-value" value="${fx},${fy},${fz}">
         <div class="img-focus-zoom">
           <span>缩放</span>
           <input type="range" class="img-focus-zoom-range" min="1" max="3" step="0.1" value="${fz}">
           <span class="img-focus-zoom-val">${fz}×</span>
         </div>
-        <div class="img-focus-hint">${esc(options.focusHint || '拖动调整显示区域 · 放大后可选局部画面')}</div>
+        <div class="img-focus-hint">${esc(focusHint)}</div>
       </div>` : '';
     mediaHtml = `
     <div class="img-field-media">
@@ -4275,10 +4472,15 @@ function bindImageField(key, uid, writeFn) {
   const focusPanel = dz.parentElement.querySelector('.img-focus');
   if (focusPanel) {
     const curSec = (state.sections && state.sections[selectedIndex]) || {};
-    const frontBox = curSec.type === 'double-image' ? [722, 722] : [722, 785];
-    const fkEl = focusPanel.querySelector('[data-bind-key]');
-    const fk = fkEl ? fkEl.getAttribute('data-bind-key') : 'imageFocus';
-    bindFocusPanel(focusPanel, '[data-bind-key="' + fk + '"]', undefined, frontBox);
+    if (focusPanel.getAttribute('data-letter-focus') === '1' || curSec.type === 'text-fill-banner') {
+      // text-fill-banner 专用：字母形所见即所得焦点（迷你复刻前台镂空文字）
+      bindTfLetterFocus(focusPanel, curSec);
+    } else {
+      const frontBox = curSec.type === 'double-image' ? [722, 722] : [722, 785];
+      const fkEl = focusPanel.querySelector('[data-bind-key]');
+      const fk = fkEl ? fkEl.getAttribute('data-bind-key') : 'imageFocus';
+      bindFocusPanel(focusPanel, '[data-bind-key="' + fk + '"]', undefined, frontBox);
+    }
   }
 }
 // URL 直链 input 绑定（焦点视图/dropzone 共用）
@@ -4461,6 +4663,291 @@ function bindFocusPanel(panel, hiddenSel, onPos, frontBox) {
   }
 }
 
+/* ===== text-fill-banner：字母形焦点预览（所见即所得） =====
+   焦点面板不再用「矩形裁切框」语义，而是把前台的镂空文字迷你复刻到 admin：
+   .tf-focus-stage = 字母区（满宽 × 54vh 的宽扁条）；
+   字母元素 background-clip:text 承载填充图，measure+scale 算法与前台 render.js
+   tfMeasure/tfFit 完全一致（基准字号 200、canvas actualBoundingBox 墨迹、非等比 scale、
+   background-size 反向补偿）→ 拖动/缩放看到的即前台效果。 */
+const TF_FONT_URLS_ADMIN = {
+  limelight: 'Limelight',
+  anton: 'Anton',
+  archivo: 'Archivo+Black',
+  bebas: 'Bebas+Neue',
+  inter: 'Inter+Tight:wght@900'
+};
+function ensureTfFontAdmin(f) {
+  // 返回 Promise：字体样式表 <link> 加载完成（或已加载过）后 resolve。
+  // ⚠️ 必须先等 css 注册完 @font-face，再 fonts.load / measureText——
+  //   否则 fonts.load 找不到字体立即失败 → 用系统 fallback 测墨迹 → 预览呈「细瘦回退体」。
+  //   （非 inter 字体全变细；inter 因请求 900 被浏览器 font-synthesis 合成 faux-bold 才显粗，
+  //    于是看起来"只有 900 是粗的"，与真实页面加载成功后的效果不一致。）
+  const fam = TF_FONT_URLS_ADMIN[f];
+  if (!fam) return Promise.resolve();
+  const loaded = (window.__tfFontLoaded = window.__tfFontLoaded || {});
+  if (loaded[f]) return Promise.resolve();
+  loaded[f] = true;
+  return new Promise(function (res) {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=' + fam + '&display=swap';
+    let done = false;
+    const finish = function () { if (!done) { done = true; res(); } };
+    l.onload = finish;
+    l.onerror = finish;
+    document.head.appendChild(l);
+  });
+}
+// 打开 text-fill-banner 焦点预览时一次性预载全部 5 个字体：
+// 切换字体零网络等待，且避免「新字体 css 未注册 → fallback 细体闪现/失真」
+function ensureAllTfFontsAdmin() {
+  Object.keys(TF_FONT_URLS_ADMIN).forEach(function (f) { ensureTfFontAdmin(f); });
+}
+function bindTfLetterFocus(panel, curSec) {
+  if (panel.dataset.tfBound === '1') return;
+  panel.dataset.tfBound = '1';
+  const stage = panel.querySelector('.tf-focus-stage');
+  const cardEl = panel.querySelector('.tf-focus-card');
+  const titleEl = panel.querySelector('.tf-focus-title');
+  const wrap = titleEl && titleEl.parentElement;   // .tf-focus-wrap
+  const hidden = panel.querySelector('input[data-bind-key]');
+  const range = panel.querySelector('.img-focus-zoom-range');
+  const rangeVal = panel.querySelector('.img-focus-zoom-val');
+  if (!stage || !titleEl || !wrap || !hidden) return;
+  // 预载 5 个候选字体：后续下拉切换不重新走网络、不出现 fallback 细体闪现
+  ensureAllTfFontsAdmin();
+  const media = panel.closest('.img-field-media');
+  const urlInp = media && media.querySelector('.dropzone [data-ftype="image-value"]');
+  const url = (urlInp && urlInp.value) || (curSec && curSec.image) || '';
+
+  // 当前 section 配置快照：与 state.sections[selectedIndex] 是同一对象引用，
+  // 上方表单改动会直接反映进来，重跑 applyShape() 即可让字母焦点预览所见即所得联动
+  const s = curSec || {};
+
+  // 字形应用（字体/字距/文本/底色/滤镜 + canvas 重测墨迹 + fit 重绘），外部字段联动调用
+  async function applyShape() {
+    const fontKey = (s.font && s.font in TF_FONT_URLS_ADMIN) ? s.font : 'limelight';
+    // 先等字体样式表注册完再应用/测量（await 期间保留旧字形，不闪 fallback 细体）
+    await ensureTfFontAdmin(fontKey);
+    titleEl.style.fontFamily = "'" + (TF_FONT_URLS_ADMIN[fontKey] || 'Limelight').replace('+', ' ') + "' ,sans-serif";
+    titleEl.style.fontWeight = (fontKey === 'inter') ? '900' : '400';
+    titleEl.textContent = String(s.title || '').trim();
+    // 字距：-0.045 / -0.045em 均可（tfMeasure 会同步 canvas letterSpacing，墨迹随字距重测）
+    const tls = String(s.titleTracking || '').trim();
+    titleEl.style.letterSpacing = (tls && !/[a-z%]+$/i.test(tls)) ? ((parseFloat(tls) || 0) + 'em') : (tls || '');
+    // 卡片底色/黑白（文字填充由 class 的 color:transparent + text-fill 决定，勿 inline 覆盖）
+    if (cardEl) cardEl.style.background = s.cardColor || '#ffffff';
+    titleEl.style.filter = (s.imageMode === 'bw') ? 'grayscale(1)' : '';
+    await tfMeasure();
+    tfFit();
+  }
+  panel._tfApply = applyShape;   // 供 renderEditorForm 委托：上方字母外型参数变化 → 即时联动
+
+  if (url) {
+    titleEl.style.backgroundImage = 'url("' + url.replace(/"/g, '\\"') + '")';
+    titleEl.style.backgroundRepeat = 'no-repeat';
+  } else {
+    titleEl.classList.add('tf-noimg');
+  }
+
+  // 首绘/换字体校准：等真字体加载完再 applyShape（防 fallback 字体测错墨迹）；
+  //   后续 fonts.load promise + document.fonts loadingdone 事件兜底换字体与重测
+  function bootShape() { Promise.resolve(applyShape()).then(function () { if (typeof tfFit === 'function') tfFit(); }); }
+  const fontFam0 = (TF_FONT_URLS_ADMIN[(curSec && curSec.font) || 'limelight'] || 'Limelight').replace('+', ' ');
+  const fontW0 = ((curSec && curSec.font) === 'inter') ? '900' : '400';
+  let fontP = null;
+  if (document.fonts && document.fonts.load) {
+    try { fontP = document.fonts.load(fontW0 + ' 200px "' + fontFam0 + '"'); } catch (_) {}
+  }
+  (fontP || Promise.resolve()).then(bootShape).catch(bootShape);
+  if (document.fonts && document.fonts.addEventListener) {
+    document.fonts.addEventListener('loadingdone', bootShape);
+  }
+
+  // 解析当前 imageFocus "x,y,zoom"
+  const parseP = (v) => {
+    const p = String(v || '50,50,1.5').split(',').map(Number);
+    const z = (p[2] && p[2] >= 1) ? p[2] : 1.5;
+    return { x: (p[0] === 0 || p[0]) ? p[0] : 50, y: (p[1] === 0 || p[1]) ? p[1] : 50, z: z };
+  };
+  const pp = parseP(hidden.value);
+  let fx = pp.x, fy = pp.y, fz = pp.z;
+  let natRatio = 0;          // 图片宽高比（加载后确定）
+  const clampP = (v) => Math.max(0, Math.min(100, v));
+  const st = { inkW: 1, boxW: 1, boxH: 1 };
+
+  // 与前台 tfMeasure 相同：canvas 测真实墨迹 → 重写 line-height。
+  // ⚠️ 等真字体可用：fonts.ready 只 resolve 一次且常过早；fallback 字体下 dLocal 与真实 Limelight
+  //   差很大（实测 Limelight fAsc=232、inkAsc=147 → dLocal=+15；fallback dLocal≈-9），
+  //   若用 fallback 测会导致顶部留 30+ px 空隙。这里 fonts.load 才 准。
+  function tfMeasure() {
+    const cs = getComputedStyle(titleEl);
+    titleEl.style.fontSize = '200px';
+    return (document.fonts && document.fonts.load ? document.fonts.load(cs.fontWeight + ' 200px "' + cs.fontFamily.split(',')[0].trim().replace(/['"]/g,'') + '"').catch(function(){}) : Promise.resolve()).then(function () {
+      const c = document.createElement('canvas');
+      const ctx = c.getContext('2d');
+      ctx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+      try { ctx.letterSpacing = (cs.letterSpacing && cs.letterSpacing !== 'normal') ? cs.letterSpacing : '0px'; } catch (_) {}
+      const m = ctx.measureText((titleEl.textContent || '').trim());
+      const inkW = (m.actualBoundingBoxLeft || 0) + (m.actualBoundingBoxRight || 0);
+      st.inkW = (inkW > 0) ? inkW : (m.width || 1);
+      const asc = m.actualBoundingBoxAscent || 0;
+      const desc = m.actualBoundingBoxDescent || 0;
+      if (asc + desc > 10) titleEl.style.lineHeight = (asc + desc).toFixed(1) + 'px';
+      const fAsc = m.fontBoundingBoxAscent || 0;
+      const fDesc = m.fontBoundingBoxDescent || 0;
+      const lhPx = parseFloat(getComputedStyle(titleEl).lineHeight) || (asc + desc);
+      const halfLeading = (lhPx - fAsc - fDesc) / 2;
+      st.dLocal = halfLeading + fAsc - asc;
+      const prev = titleEl.style.transform;
+      titleEl.style.transform = 'none';
+      st.boxW = titleEl.offsetWidth || 1;
+      st.boxH = titleEl.offsetHeight || 1;
+      titleEl.style.transform = prev;
+    });
+  }
+  // 与前台 tfFit 相同：非等比 scale 填满 + background-size 反向补偿
+  function tfFit() {
+    const W = stage.clientWidth || wrap.clientWidth;
+    const H = wrap.clientHeight || stage.clientHeight;
+    if (!W || !H || !st.inkW || !natRatio) return;
+    const fw = parseFloat(s.fitWidth) || 112;
+    const fh = parseFloat(s.fitHeight) || 100;
+    const sx = (W / st.inkW) * (fw / 100);
+    const sy = (H / st.boxH) * (fh / 100);
+    // translateY(-dLocal)：ink 顶贴 stage 顶，ink 底贴 stage 底（不能 ×sy）
+    const ty = -((st.dLocal || 0));
+    titleEl.style.transform = 'scale(' + sx.toFixed(4) + ',' + sy.toFixed(4) + ') translateY(' + ty.toFixed(2) + 'px)';
+    const k = (fz > 0) ? fz : 1;
+    const iw = W * k;
+    const ih = iw / natRatio;
+    titleEl.style.backgroundSize = ((iw / sx / st.boxW) * 100).toFixed(3) + '% ' + ((ih / sy / st.boxH) * 100).toFixed(3) + '%';
+    titleEl.style.backgroundPosition = fx + '% ' + fy + '%';
+  }
+  // 当前在预览内可平移的像素量（图片显示尺寸 - 字母盒显示尺寸；宽高各自独立）
+  function overflowPx() {
+    const W = stage.clientWidth || wrap.clientWidth;
+    if (!natRatio) return { ow: 0, oh: 0 };
+    const k = (fz > 0) ? fz : 1;
+    const rect = titleEl.getBoundingClientRect();
+    const iw = W * k, ih = iw / natRatio;
+    return { ow: Math.max(0, iw - rect.width), oh: Math.max(0, ih - rect.height) };
+  }
+  function writeValue() {
+    hidden.value = Math.round(fx) + ',' + Math.round(fy) + ',' + (Math.round(fz * 10) / 10);
+    try {
+      const fk = hidden.getAttribute('data-bind-key') || 'imageFocus';
+      if (typeof selectedIndex === 'number' && selectedIndex >= 0 && state.sections && state.sections[selectedIndex]) {
+        state.sections[selectedIndex][fk] = hidden.value;
+        if (typeof onSectionChanged === 'function') onSectionChanged();
+      }
+    } catch (_) {}
+    try { hidden.dispatchEvent(new Event('change')); } catch (_) {}
+  }
+  // 拖动：内容跟随指针（拖右 → 图像右移 → 露出左边部分）
+  let dragging = false, sx0 = 0, sy0 = 0, fx0 = 0, fy0 = 0;
+  const onDown = (e) => {
+    if (e.target && e.target.closest && e.target.closest('.img-focus-zoom')) return;
+    dragging = true;
+    panel.classList.add('dragging');
+    fx0 = fx; fy0 = fy;
+    sx0 = (e.touches ? e.touches[0].clientX : e.clientX);
+    sy0 = (e.touches ? e.touches[0].clientY : e.clientY);
+    if (e.cancelable) e.preventDefault();
+  };
+  const onMove = (e) => {
+    if (!dragging) return;
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX);
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY);
+    const ov = overflowPx();
+    if (ov.ow > 1) fx = clampP(fx0 - ((cx - sx0) / ov.ow) * 100);
+    if (ov.oh > 1) fy = clampP(fy0 - ((cy - sy0) / ov.oh) * 100);
+    tfFit();
+    writeValue();
+  };
+  const onUp = () => { dragging = false; panel.classList.remove('dragging'); };
+  stage.addEventListener('mousedown', onDown);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+  stage.addEventListener('touchstart', onDown, { passive: false });
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('touchend', onUp);
+
+  // 缩放：保持中心对应图片位置（x_new = x * z_old / z_new）
+  if (range) {
+    range.addEventListener('input', () => {
+      const nz = Math.max(1, Math.min(3, parseFloat(range.value) || 1));
+      if (Math.abs(nz - fz) < 0.001) return;
+      fx = clampP(fx * fz / nz);
+      fy = clampP(fy * fz / nz);
+      fz = nz;
+      tfFit();
+      writeValue();
+      if (rangeVal) rangeVal.textContent = fz.toFixed(1) + '×';
+    });
+    range.addEventListener('change', () => {
+      const nz = Math.max(1, Math.min(3, parseFloat(range.value) || 1));
+      fx = clampP(fx * fz / nz);
+      fy = clampP(fy * fz / nz);
+      fz = nz;
+      tfFit();
+      writeValue();
+      if (rangeVal) rangeVal.textContent = fz.toFixed(1) + '×';
+    });
+  }
+
+  // 素材加载 → 拿到宽高比后首绘（applyShape = 字形+墨迹+fit 一把梭）；字体就绪后再测一遍（防回退字体测错）
+  if (url) {
+    const im = new Image();
+    im.onload = () => {
+      if (im.naturalWidth > 1 && im.naturalHeight > 1) {
+        natRatio = im.naturalWidth / im.naturalHeight;
+        applyShape();
+      }
+    };
+    im.src = url;
+  }
+  // 首绘/换字体校准：fonts.ready 只 resolve 一次且常过早；tfMeasure 已 await document.fonts.load 真字体，
+  //   applyShape 入口保证 measureText 拿到真字体 metrics。这里只设兜底事件。
+  if (document.fonts && document.fonts.addEventListener) {
+    document.fonts.addEventListener('loadingdone', () => Promise.resolve(applyShape()));
+  }
+  if (window.addEventListener) {
+    window.addEventListener('load', () => {
+      setTimeout(() => Promise.resolve(applyShape()), 200);
+      setTimeout(() => Promise.resolve(applyShape()), 800);
+    });
+  }
+  // 兼容旧代码：先跑一次首绘（旧调用 applyShape 同步版会再触发 tfMeasure 内部 await）
+  Promise.resolve(applyShape());
+}
+
+// text-fill-banner 联动：表单里改 title / font / titleTracking / fitWidth / fitHeight / imageMode / cardColor
+// → 下方字母形焦点预览即时重绘（applyShape）。range/text 只写 state 不重建表单，全靠这里刷新；
+// select 虽会整表重建（自带重绘），提前触发一次也无副作用。
+function tfShapeSync(e) {
+  const sec = (state && state.sections && state.sections[selectedIndex]);
+  if (!sec || sec.type !== 'text-fill-banner') return;
+  const t = (e && e.target) || null;
+  if (!t || !t.closest) return;
+  const syncKeys = { title: 1, titleTracking: 1, fitWidth: 1, fitHeight: 1, font: 1, imageMode: 1 };
+  let key = null;
+  // 输入类（input/select/textarea）与色板点击（palette swatch）两种来源都支持
+  if (t.dataset && t.dataset.bindKey) {
+    key = t.dataset.bindKey;
+  } else {
+    const box = t.closest('[data-bind-ftype="palette"]');
+    if (box && box.dataset.bindKey === 'cardColor') key = 'cardColor';
+  }
+  if (!key) return;
+  if (key !== 'cardColor' && !syncKeys[key]) return;
+  const holder = document.querySelector('#editorFormContainer .img-focus .tf-focus-stage');
+  if (!holder) return;                        // 无填充图 → 无字母预览
+  const panel = holder.closest('.img-focus');
+  if (!panel || typeof panel._tfApply !== 'function') return;
+  panel._tfApply();   // 字体类 select 随后会整表重建（bind 内的 fonts.check 轮询负责精确校准）
+}
+
 // 透明屏检测：device-screen 的样机图必须是「屏幕区域抠成透明」的 PNG/WebP，
 // 否则嵌入的媒体在样机图下层会被不透明的机身/屏幕完全遮挡而看不见。
 // 上传后自动检测 alpha 通道：PNG/WebP 却无任何透明像素 → 提示先去抠图。
@@ -4560,7 +5047,11 @@ function setImageValue(key, uid, url, writeFn, withFocus) {
   const fk = oldFk ? oldFk.getAttribute('data-bind-key') : 'imageFocus';
   const curSec = (state.sections && state.sections[selectedIndex]) || {};
   const newHtml = renderImageFieldWithUrl(key, url, uid, Object.assign(
-    withFocus ? { focus: true, focusKey: fk, stageRatio: curSec.type === 'double-image' ? '1/1' : undefined } : {},
+    withFocus ? {
+      focus: true, focusKey: fk,
+      tfLetterFocus: curSec.type === 'text-fill-banner' && key === 'image',
+      stageRatio: curSec.type === 'double-image' ? '1/1' : undefined
+    } : {},
     prevFmt ? { fmtPick: prevFmt } : {}
   ));
   const tmp = document.createElement('div');

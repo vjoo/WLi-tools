@@ -63,6 +63,7 @@ var CaseRenderer = (function () {
     'scene-grid':    renderSceneGrid,  // 场景网格（居中头 + 场景卡片网格，来自 scenes）
     'mockup-banner': renderMockupBanner, // 3D 样机 Banner（手机/笔记本真 3D 旋转进场 + 标题/背景合成）
     'ad-banner': renderAdBanner,         // 广告 Banner（大标题裂开 + 16:9 图片无缝跑马灯 + 上下副标题）
+    'text-fill-banner': renderTextFillBanner, // 字图填充 Banner（超大字母镂空填图贴上半屏 + 副标题压字底）
     'icon-wall': renderIconWall,          // 图标动画墙（GIF/APNG/Lottie 散落全屏）
     'device-screen': renderDeviceScreen   // 设备屏幕嵌入（人物手持样机图 + 透视贴合嵌入设计稿/视频）
   };
@@ -94,6 +95,7 @@ var CaseRenderer = (function () {
     'scene-grid': '场景网格',
     'mockup-banner': '3D样机Banner',
     'ad-banner': '广告Banner',
+    'text-fill-banner': '字图填充Banner',
     'device-screen': '设备屏幕嵌入'
   };
 
@@ -123,7 +125,7 @@ var CaseRenderer = (function () {
     var grid = '<section class="sk-grid"><div class="sk-media sk"></div><div class="sk-media sk"></div><div class="sk-media sk"></div><div class="sk-media sk"></div><div class="sk-media sk"></div><div class="sk-media sk"></div></section>';
     switch (type) {
       case 'intro': case 'hero': case 'hero-banner': case 'big-banner':
-      case 'title': case 'ad-banner': case 'mockup-banner': case 'double-banner':
+      case 'title': case 'ad-banner': case 'text-fill-banner': case 'mockup-banner': case 'double-banner':
       case 'double-image': case 'masonry': case 'stats':
         return hero;
       case 'showcase': case 'image': case 'gallery': case 'carousel':
@@ -237,6 +239,7 @@ var CaseRenderer = (function () {
         if (window.gsap) { runAB(); return; }
         var _t = 0, _iv = setInterval(function () { _t++; if (window.gsap || _t > 50) { clearInterval(_iv); runAB(); } }, 60);
       }, 'initAdBanners');
+      safeDownstream(function () { initTextFillBanners(); }, 'initTextFillBanners');
       if (container.querySelector('[data-animated-bg]')) ensureAnimatedBG();
       if (typeof window.registerRevealElements === 'function') {
         window.registerRevealElements(container);
@@ -474,6 +477,8 @@ var CaseRenderer = (function () {
   //   - 组内不放按钮（nixtio 原版 Hero 无按钮）
   function renderHeroBanner(s) {
     var section = sec('hero-banner-section');
+    // 滚动缩小淡出（视差）开关：编辑器勾选 scrollEffect 才启用（默认关 → 滚动时容器/背景不缩小）
+    if (s.scrollEffect) section.setAttribute('data-px-zoom', '1');
     // 媒体源：videoType 决定 image / video / carousel / placeholder
     var mediaType = s.videoType || 'image';
     var mediaSrc = '';
@@ -611,6 +616,8 @@ var CaseRenderer = (function () {
     secs.forEach(function (sec) {
       if (sec.dataset.pxBound) return;
       sec.dataset.pxBound = 'true';
+      // 未开启「滚动缩小淡出」（编辑器默认不勾选）：滚动时保持原样，不缩放不移位不淡出
+      if (sec.getAttribute('data-px-zoom') !== '1') return;
       var media = sec.querySelector('.hero-banner-media');
       if (!media) return;
       var content = sec.querySelector('.hero-banner-content');
@@ -2847,6 +2854,203 @@ var CaseRenderer = (function () {
     setupAdBannerMarquee(section);                  // 预挂载测一次（宽=0，仅注册视口暂停钩子）
     AD_QUEUE.push(section);
     return section;
+  }
+
+  // ===== 字图填充 Banner（text-fill-banner）=====
+  // 超大字母镂空填充图片（background-clip:text）贴上半屏，副标题压住字底，底部说明小字。
+  // 版式比例反推自参考图（像素级测量）：字母区 0~54vh 满宽左右切边、副标题顶 47vh（压字底重叠 7vh）、
+  //   左距 3.8vw、底部小字贴底（底边距 5vh）。
+  // fit 算法（demo v14~v18 验证）：
+  //   ① canvas measureText(actualBoundingBox) 测精确墨迹宽（advance width 含 side bearing 会贴不了边）
+  //   ② boxH 用 offsetHeight（getComputedStyle().lineHeight 返回绝对像素不是比例，乘 fontSize 会爆炸）
+  //   ③ ctx.letterSpacing 必须同步 computed 值（canvas measureText 默认不含 CSS 字距）
+  //   ④ 非等比 scale(sx, sy) 填满容器，background-size 按 sx/sy 反向补偿 → 图片永不形变、缩放窗口不变形
+  //   ⑤ h2 内禁套 inline-block span（会让父元素 background-clip:text 完全失效）
+  // 图片焦点复用框架标准 imageFocus "x,y,zoom"：x,y → background-position，zoom → 显示尺寸系数。
+  var TF_FONT_URLS = {
+    limelight: 'Limelight',
+    anton: 'Anton',
+    archivo: 'Archivo+Black',
+    bebas: 'Bebas+Neue',
+    inter: 'Inter+Tight:wght@900'
+  };
+  var TF_FONT_LOADED = {};
+  var TF_QUEUE = [];
+  var TF_GLOBAL_BOUND = false;
+
+  function ensureTfFont(f) {
+    var fam = TF_FONT_URLS[f];
+    if (!fam || TF_FONT_LOADED[f]) return;
+    TF_FONT_LOADED[f] = true;
+    var l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=' + fam + '&display=swap';
+    document.head.appendChild(l);
+  }
+
+  function renderTextFillBanner(s) {
+    var section = sec('text-fill-banner-section');
+    var font = s.font || 'limelight';
+    ensureTfFont(font);
+
+    var styleParts = [];
+    if (s.cardColor) styleParts.push('background:' + s.cardColor);
+    if (s.inkColor) styleParts.push('color:' + s.inkColor);
+    var frameStyle = styleParts.length ? ' style="' + styleParts.join(';') + '"' : '';
+    var bw = s.image && s.imageMode === 'bw'; // 填充图黑白模式（grayscale）
+    var titleTxt = (s.title || '').trim();
+
+    // imageFocus "x,y,zoom"（x/y 0~100，zoom 显示尺寸系数，默认 1.5）
+    var fx = 50, fy = 50, fz = 1.5;
+    var fm = String(s.imageFocus || '').trim().match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)(?:,(-?\d+(?:\.\d+)?))?$/);
+    if (fm) { fx = +fm[1]; fy = +fm[2]; if (fm[3]) fz = +fm[3]; }
+
+    // 标题字距：支持 "-0.045" 或 "-0.045em"
+    var tls = String(s.titleTracking || '').trim();
+    if (tls && !/[a-z%]+$/i.test(tls)) tls = (parseFloat(tls) || 0) + 'em';
+    var sls = String(s.subtitleTracking || '').trim();
+    if (sls && !/[a-z%]+$/i.test(sls)) sls = (parseFloat(sls) || 0) + 'em';
+    var subSize = parseFloat(s.subtitleSize) || 11; // vh
+
+    var titleHtml = '';
+    if (titleTxt) {
+      titleHtml = '<h2 class="tf-title tf-font-' + esc(font) + '"' +
+        (tls ? ' style="letter-spacing:' + esc(tls) + '"' : '') +
+        (s.image ? ' data-tf-bg="' + esc(s.image) + '"' : '') +
+        '>' + esc(titleTxt) + '</h2>';
+    }
+    var headingHtml = s.heading
+      ? '<h3 class="tf-heading" style="font-size:' + subSize + 'vh' + (sls ? ';letter-spacing:' + esc(sls) : '') + '">' +
+        esc(s.heading).replace(/\n/g, '<br>') + '</h3>' : '';
+    var descHtml = s.desc
+      ? '<div class="tf-bottom-row"><p class="tf-desc">' + esc(s.desc).replace(/\n/g, '<br>') + '</p></div>' : '';
+
+    section.innerHTML =
+      '<div class="tf-frame' + (s.image ? ' tf-has-img' : '') + (bw ? ' tf-bw' : '') + '"' + frameStyle + '>' +
+        '<div class="tf-title-wrap">' + titleHtml + '</div>' +
+        '<div class="tf-subline">' + headingHtml + descHtml + '</div>' +
+      '</div>';
+
+    // 背景图设在 inline style（JS fit 会覆盖 background-size 做反向补偿）
+    var title = section.querySelector('.tf-title');
+    var wrap = section.querySelector('.tf-title-wrap');
+    if (title && s.image) title.style.backgroundImage = "url('" + s.image.replace(/'/g, "\\'") + "')";
+
+    if (title && wrap) {
+      var st = { inkW: 1, boxW: 1, boxH: 1, imgRatio: 0 };
+      var BASE = 200; // 基准字号，实际由 scale 拉伸
+      function tfMeasure() {
+        var cs = getComputedStyle(title);
+        title.style.fontSize = BASE + 'px';
+        // 等当前字体真正可用：document.fonts.ready 只 resolve 一次且可能在页面早期就 resolve，
+        // fonts.check 在 fallback 字体下也常误报 true；唯一可靠的是 fonts.load(weight size family)
+        // 返回的 promise（真加载完才 resolve）。注意：函数改 async 后调用方需 await。
+        return (document.fonts && document.fonts.load ? document.fonts.load(cs.fontWeight + ' ' + BASE + 'px "' + cs.fontFamily.split(',')[0].trim().replace(/['"]/g,'') + '"').catch(function(){}) : Promise.resolve()).then(function () {
+          var c = document.createElement('canvas');
+          var ctx = c.getContext('2d');
+          ctx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+          try { ctx.letterSpacing = (cs.letterSpacing && cs.letterSpacing !== 'normal') ? cs.letterSpacing : '0px'; } catch (_) {}
+          var m = ctx.measureText((title.textContent || '').trim());
+          var inkW = (m.actualBoundingBoxLeft || 0) + (m.actualBoundingBoxRight || 0);
+          if (!(inkW > 0)) inkW = m.width || 1;
+          // ⚠️ 用真实墨迹高度（ascent+descent）重写 line-height：不同字体的 cap+descent 不同
+          //   （Anton ≈0.9em、Limelight ≈0.78em），固定 line-height 会让 box 比墨迹高，
+          //   sy 按 box 算导致字底贴不到 wrap 底（Limelight 字底只有 47vh，副标题压不住）
+          var asc = m.actualBoundingBoxAscent || 0;
+          var desc = m.actualBoundingBoxDescent || 0;
+          if (asc + desc > 10) title.style.lineHeight = (asc + desc).toFixed(1) + 'px';
+          // ⚠️ ink 顶距 box 顶偏移 d_local：font metric ascent ≠ inkAsc。line-height=inkH 时
+          //   halfLeading 极负（Limelight lh=151 vs fontAsc+fontDesc=290），dLocal ≈+15 → ink 顶
+          //   在 box 顶**下方** 15px → tfFit 用 translateY(-dLocal) 把 ink 顶贴 wrap 顶
+          var fAsc = m.fontBoundingBoxAscent || 0;
+          var fDesc = m.fontBoundingBoxDescent || 0;
+          var lhPx = parseFloat(getComputedStyle(title).lineHeight) || (asc + desc);
+          var halfLeading = (lhPx - fAsc - fDesc) / 2;
+          st.dLocal = halfLeading + fAsc - asc;
+          var prev = title.style.transform;
+          title.style.transform = 'none';
+          st.boxW = title.offsetWidth || 1;
+          st.boxH = title.offsetHeight || 1;
+          title.style.transform = prev;
+          st.inkW = inkW;
+        });
+      }
+      function tfFit() {
+        var W = wrap.clientWidth, H = wrap.clientHeight;
+        if (!W || !H) return;
+        var sx = (W / st.inkW) * ((parseFloat(s.fitWidth) || 112) / 100);
+        var sy = (H / st.boxH) * ((parseFloat(s.fitHeight) || 100) / 100);
+        // translateY(-dLocal)：ink 顶贴 wrap 顶，ink 底贴 wrap 底
+        // ⚠️ 不能 × sy：CSS transform-origin top center 的偏移自动吸收 sy 缩放，
+        //   再乘 sy 会让大 sy（如前台 sy≈3.6）时 translateY 过大把 ink 顶推出 wrap 顶
+        //   被白卡 overflow:hidden 裁掉，结果顶部反而空一大段白
+        var ty = -((st.dLocal || 0));
+        title.style.transform = 'scale(' + sx.toFixed(4) + ',' + sy.toFixed(4) + ') translateY(' + ty.toFixed(2) + 'px)';
+        // background 反向补偿：图在屏幕上保持原比例，不被 scale 拉伸
+        if (s.image && st.imgRatio > 0) {
+          var k = fz > 0 ? fz : 1;
+          // ⚠️ 窄屏兜底：图是横图（imgRatio 常 >1），移动端 wrap 宽度小时反向补偿出的
+          //   图可见高（W*k/imgRatio）会小于字母墨迹屏幕高（boxH*sy），图带只贴住字母
+          //   下半段 → 字母上半截无图、透出黑/白卡底，看起来像「只显示一部分/被截断」。
+          //   抬升 k 直到图可见高 ≥ 字母墨迹高（桌面端 W 大，本分支自动不触发）。
+          var glyphScreenH = st.boxH * sy;
+          var imgScreenHAtK = (W * k) / st.imgRatio;
+          if (imgScreenHAtK < glyphScreenH) {
+            k = (st.imgRatio * glyphScreenH) / W;
+          }
+          var screenImgW = W * k;
+          var screenImgH = screenImgW / st.imgRatio;
+          var px = ((screenImgW / sx) / st.boxW) * 100;
+          var py = ((screenImgH / sy) / st.boxH) * 100;
+          title.style.backgroundSize = px.toFixed(3) + '% ' + py.toFixed(3) + '%';
+          title.style.backgroundPosition = fx + '% ' + fy + '%';
+        }
+      }
+      section._tfMeasure = tfMeasure;
+      section._tfFit = tfFit;
+      if (s.image) {
+        var pim = new Image();
+        pim.onload = function () {
+          if (pim.naturalWidth > 1) {
+            st.imgRatio = pim.naturalWidth / pim.naturalHeight;
+            // 等 tfMeasure（字体就绪）完成再 fit，避免用 fallback 字体算错 dLocal
+            Promise.resolve(tfMeasure()).then(tfFit);
+          }
+        };
+        pim.src = s.image;
+      }
+    }
+    TF_QUEUE.push(section);
+    return section;
+  }
+
+  function initTextFillBanners() {
+    TF_QUEUE.forEach(function (sec) {
+      if (sec._tfMeasure && sec._tfFit) { Promise.resolve(sec._tfMeasure()).then(sec._tfFit); }
+    });
+    if (TF_GLOBAL_BOUND) return;
+    TF_GLOBAL_BOUND = true;
+    window.addEventListener('resize', function () {
+      TF_QUEUE.forEach(function (sec) { if (sec._tfFit) sec._tfFit(); });
+    });
+    // ⚠️ 字体重新测量兜底：fonts.ready 只 resolve 一次，且可能在 tfMeasure 首次运行前已 resolve；
+    //   兜底 1：window.load + 200ms（页面完全加载后强制重测）
+    //   兜底 2：fonts.load 针对当前字体（仅作为再触发器，等真加载完重测）
+    var reMeasureAll = function () {
+      TF_QUEUE.forEach(function (sec) {
+        if (sec._tfMeasure && sec._tfFit) { Promise.resolve(sec._tfMeasure()).then(sec._tfFit); }
+      });
+    };
+    if (window.addEventListener) {
+      window.addEventListener('load', function () {
+        setTimeout(reMeasureAll, 200);
+        setTimeout(reMeasureAll, 800);
+      });
+    }
+    // 字体切换/初次可用后强制重测（fonts.ready 不可靠，fonts.load 才 准）
+    if (document.fonts && document.fonts.addEventListener) {
+      document.fonts.addEventListener('loadingdone', reMeasureAll);
+    }
   }
 
   // ===== 设备屏幕嵌入 device-screen（人物手持样机图 + 透视贴合嵌入设计稿/视频） =====

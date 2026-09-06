@@ -644,18 +644,24 @@
   overflow: hidden;
   position: relative;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  /* ⚠️ 卡顿修复：不在此做 transform/阴影过渡。
+     multi-column 分页上下文里整卡 translateY 浮动会触发列内碎片重排重绘，
+     box-shadow 渐变则每帧软件光栅化大范围阴影——两者并发导致 hover 放大卡顿。
+     hover 放大改由 .masonry-cover-img 合成层 transform 承担（与展示区同一流畅路径）。 */
 }
 .masonry-card:hover {
-  transform: translateY(-4px);
+  /* 仅图片放大（.masonry-cover-img 合成层动画），整卡不再上浮；阴影瞬时加深，不参与过渡 */
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
 .masonry-cover {
   position: relative;
   background: var(--color-gray-ultra-light);
 }
-.masonry-cover-img {
-  transition: transform var(--transition-base);
+/* hover 放大过渡必须用双类把特异性提到 (0,2,0)：
+   瀑布流 img 同时带 .media-reserve-img（其后声明的单类 transition:opacity .3s 会整体覆盖这里的 transform 过渡，
+   导致放大 0-100 瞬切生硬）。双类 + 合并声明 opacity 才能压过后方规则，与展示区 .img:not([data-focus]) 同级 */
+.media-reserve-img.masonry-cover-img {
+  transition: transform var(--transition-base), opacity .3s ease;
 }
 .masonry-card:hover .masonry-cover-img {
   transform: scale(1.04);
@@ -709,7 +715,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.375rem; /* 6px */
-  transition: background var(--transition-base);
+  /* 背景渐变不再做 transition：hover 瞬时加深，避免逐帧重绘大范围渐变加剧卡顿 */
 }
 .masonry-card:hover .masonry-overlay {
   background: linear-gradient(to top, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.35) 60%, transparent 100%);
@@ -4133,6 +4139,121 @@
 @media (max-width: 767px) {
   .device-screen-section { padding-block: 2rem; }
   .ds-caption { max-width: 92%; bottom: 16px; }
+}
+
+/* ===== 字图填充 Banner（text-fill-banner）=====
+   超大字母镂空填图（background-clip:text）贴上半屏，副标题大字，底部说明小字。
+   版式比例反推自参考图像素测量：字母区 0~54vh 满宽切边、副标题顶 57vh、左距 3.8vw、底边距 5vh。
+   填充图可选彩色/黑白（.tf-bw → grayscale）；卡片底色与文字色可用色板指定（默认白底近黑字）。
+   字母尺寸由 render.js fit 算法内联 transform（scaleX/scaleY 非等比填满 + 背景反向补偿）。
+   【外层版式】与大Banner（hero-banner）同款：组件一屏高、四周留 0.75rem 小边距，
+   .tf-frame 圆角 25px overflow:hidden；【贴边对象】是字母/副标题贴 .tf-frame 内边
+   （frame 顶/底由 fit 算法 translateY(-dLocal) 保证），不是让组件铺满 viewport。 */
+/* 只放开 .container 的 1208/1520px 上限（随视口延展），保留 margin auto 与 section 自身边距；
+   不能 padding:0/max-width:none 全铺——那会把外围四周边距改没 */
+.container.text-fill-banner-section {
+  max-width: 100%;
+}
+.text-fill-banner-section {
+  height: 100vh;             /* 与大Banner一致：占满一屏 */
+  display: flex;
+  align-items: stretch;
+  padding: 0.75rem;          /* 四周一致小边距（12px），frame 内嵌居中 */
+  box-sizing: border-box;
+}
+.tf-frame {
+  position: relative;
+  flex: 1 1 auto;
+  align-self: stretch;
+  max-width: none;
+  border-radius: 25px;
+  overflow: hidden;
+  background: #ffffff;
+  color: #0a0a0a;
+}
+.tf-title-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 54vh;              /* 字母区 0~54% 屏高（参考图实测） */
+  display: flex;
+  justify-content: center;   /* 配合 transform-origin: top center，放大后左右对称切边 */
+  align-items: flex-start;
+  overflow: visible;
+  z-index: 1;
+}
+.tf-title {
+  margin: 0;
+  display: inline-block;
+  font-family: 'Limelight', sans-serif;
+  font-weight: 400;
+  font-size: 200px;          /* 基准字号，实际由 JS scale 拉伸填满 */
+  line-height: 0.9;          /* ≈ cap height + descent，box 高 = 墨迹高 */
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  user-select: none;
+  transform-origin: top center;
+  color: #0a0a0a;            /* 无填充图时退化为纯色大字 */
+}
+.tf-has-img .tf-title {
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  background-size: contain;  /* JS fit 后用反向补偿的百分比覆盖 */
+  -webkit-background-clip: text;
+          background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+/* 黑白模式：给镂空文字整体去饱和（文字本身 transparent，滤镜只作用于透出的图） */
+.tf-bw .tf-title {
+  filter: grayscale(1);
+}
+.tf-font-limelight { font-family: 'Limelight', sans-serif; }
+.tf-font-anton     { font-family: 'Anton', sans-serif; }
+.tf-font-archivo   { font-family: 'Archivo Black', sans-serif; }
+.tf-font-bebas     { font-family: 'Bebas Neue', sans-serif; }
+.tf-font-inter     { font-family: 'Inter Tight', 'Inter', sans-serif; font-weight: 900; }
+.tf-subline {
+  position: absolute;
+  top: 57vh;                 /* 副标题顶部；47vh 会压住字母底部（参考图原版式），57vh 完全错开在字母区之下 */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 3.8vw 5vh;      /* 左距 3.8% 屏宽、底边距 5% 屏高（参考图实测） */
+  display: flex;
+  flex-direction: column;
+  z-index: 2;                /* 在字母之上，副标题切字底 */
+  pointer-events: none;      /* 文字层不挡下方交互（按钮除外，本组件无按钮） */
+}
+.tf-heading {
+  margin: 0;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 11vh;           /* 单行带 ≈10.5% 屏高（参考图实测），JS 可用 subtitleSize 覆盖 */
+  line-height: 1.1;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+}
+.tf-bottom-row {
+  margin-top: auto;          /* 贴底 */
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.tf-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 42%;
+  opacity: 0.85;
+}
+@media (max-width: 767px) {
+  .text-fill-banner-section { padding: 0.75rem 1rem; }   /* 与大Banner移动端一致：保留四周小边距，不贴 viewport */
+  .tf-heading { font-size: 6.5vh !important; }
+  .tf-subline { padding: 0 5vw 4vh; }
+  .tf-desc { max-width: 100%; font-size: 12px; }
 }
 
 .pd-accent-blue   { color: var(--pd-accent-blue); }
