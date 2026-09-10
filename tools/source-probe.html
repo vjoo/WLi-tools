@@ -55,6 +55,11 @@
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* ⚠️ 必须显式补这条：`.spin` 的 `display:inline-block` 是类选择器（0,1,0），
+     优先级高于 UA 样式表里的 `[hidden]{display:none}`（0,1,0 但 UA 层级更低），
+     所以 JS 里设 el.hidden = true 会**静默失效** —— 元素照常显示、动画照常转。
+     完成态「旋转图标不收」就是这么来的。 */
+  .spin[hidden] { display: none; }
   tbody tr[data-state="queue"] td { opacity: 0.5; }
 
   /* 日志 */
