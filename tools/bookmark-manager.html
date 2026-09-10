@@ -139,6 +139,10 @@
 .hero-right .btn-new { height: 36px; padding: 6px 16px; font-size: 13px; }
 .hero-right .btn-settings { width: 36px; height: 36px; }
 .hero-right .btn-import { height: 36px; padding: 6px 16px; font-size: 13px; }
+/* 主操作：保存（真实写入本地文件），比其余按钮醒目一档 */
+.btn-import.btn-save { background: var(--ink); color: var(--bg-white); border-color: var(--ink); }
+.btn-import.btn-save:hover { background: var(--ink); color: var(--bg-white); border-color: var(--ink); opacity: 0.88; }
+.btn-import.btn-save[disabled] { opacity: 0.5; cursor: default; }
 
 /* ===== Section ===== */
 .section { padding: 16px 0 80px; }
@@ -787,7 +791,11 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       新增
     </button>
-    <button class="btn-import" id="btnExport" style="display:none;">
+    <!-- 保存到本地服务（写回 tools/data/bookmarks.json，仅本地起服务时可用） -->
+    <button class="btn-import btn-save" id="btnSaveServer" style="display:none;" title="写入本地 tools/data/bookmarks.json（线上生效仍需提交推送）">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <span id="btnSaveServerLabel">保存</span>
+    </button>    <button class="btn-import" id="btnExport" style="display:none;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       导出
     </button>
@@ -810,7 +818,7 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
 
 <!-- 编辑模式提示条 -->
 <div class="edit-banner" id="editBanner" style="display:none;">
-  维护模式：改动仅保存在本地内存，需点击「导出」生成 JSON 并提交到仓库后才会公开生效
+  维护模式：点「保存」直接写入 <code>tools/data/bookmarks.json</code>（需本地服务在运行）；线上对外生效还需提交推送
 </div>
 
 <!-- Main Section -->
@@ -912,7 +920,7 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
         <select id="batchClearCategory"></select>
       </div>
       <div style="padding:12px 14px;border-radius:var(--radius-sm);background:#FFF5E5;border:1px solid rgba(180,95,6,0.18);font-size:13px;color:#B45F06;line-height:1.55;">
-        ⚠️ 此操作会删除该分类下的 <strong id="batchClearCount">0</strong> 条收藏，无法撤销。删除后请记得「导出」更新到 JSON 文件。
+        ⚠️ 此操作会删除该分类下的 <strong id="batchClearCount">0</strong> 条收藏，无法撤销。删除后请记得点「保存」更新文件。
       </div>
     </div>
     <div class="modal-footer">
@@ -936,7 +944,17 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
      配置
      ============================================ */
   var DATA_URL = './data/bookmarks.json';
+  var API_URL = '/api/bookmarks';   // 本地服务写回通道（server.py），线上不存在
   var SCREENSHOT_BASE = 'https://image.thum.io/get/width/400/crop/250/';
+
+  /* 页面是否跑在「本机 / 局域网」的 server.py 上（决定保存按钮能不能真的写文件） */
+  function isLocalHost() {
+    var h = location.hostname;
+    return h === '' || h === 'localhost' || h === '127.0.0.1' || h === '::1' ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(h) ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h) ||
+      /^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(h);
+  }
   var FAVICON_BASE = 'https://icons.duckduckgo.com/ip3/';
   var FAV_STORAGE_KEY = 'bm_favorites_v1';
   var FAV_CATEGORY_KEY = '_favorites';
@@ -944,15 +962,19 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
   var EDIT_ENTRY_SHOWN_KEY = 'bm_edit_entry_v1'; // 编辑入口按钮是否已显示（session 级）
 
   /* ===== 编辑模式/入口显隐：sessionStorage 持久化（刷新保持，关浏览器清空） ===== */
+  /* 维护模式下的工具条按钮（显隐必须同步，别再逐个手写 —— 漏一个就会出现「按钮消失了」） */
+  var EDIT_CONTROLS = ['btnAdd', 'btnSaveServer', 'btnExport', 'btnImportJson', 'btnBatchClear', 'btnDone'];
+  function setEditControls(show) {
+    EDIT_CONTROLS.forEach(function(id) {
+      if (els[id]) els[id].style.display = show ? '' : 'none';
+    });
+  }
+
   function restoreEditState() {
     try {
       if (sessionStorage.getItem(EDIT_MODE_KEY) === '1') {
         state.editMode = true;
-        els.btnAdd.style.display = '';
-        els.btnExport.style.display = '';
-        els.btnImportJson.style.display = '';
-        els.btnBatchClear.style.display = '';
-        els.btnDone.style.display = '';
+        setEditControls(true);
         els.btnEdit.style.display = 'none';
         els.editBanner.style.display = '';
       } else if (sessionStorage.getItem(EDIT_ENTRY_SHOWN_KEY) === '1') {
@@ -987,7 +1009,7 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
   var els = {};
 
   function cacheEls() {
-    ['pageTitle','pageSubtitle','searchInput','btnAdd','btnExport','btnImportJson',
+    ['pageTitle','pageSubtitle','searchInput','btnAdd','btnSaveServer','btnExport','btnImportJson',
      'btnBatchClear','btnDone','jsonFileInput','btnEdit','editBanner','categoryFilter','catScrollLeft',
      'catScrollRight','bookmarkGrid','emptyState','floatingCatBar',
      'floatingCategoryFilter','floatScrollLeft','floatScrollRight','backToTop',
@@ -1094,7 +1116,10 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
      数据加载
      ============================================ */
   function loadData() {
-    fetch(DATA_URL)
+    /* 本地/局域网加时间戳：保存后刷新必须读到新文件，不能被浏览器缓存的旧 JSON 挡住
+       （线上不加，保留 CDN 缓存） */
+    var url = isLocalHost() ? DATA_URL + '?t=' + Date.now() : DATA_URL;
+    fetch(url)
       .then(function(res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
@@ -1455,11 +1480,7 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
   function enterEditMode() {
     state.editMode = true;
     persistEditMode(true);
-    els.btnAdd.style.display = '';
-    els.btnExport.style.display = '';
-    els.btnImportJson.style.display = '';
-    els.btnBatchClear.style.display = '';
-    els.btnDone.style.display = '';
+    setEditControls(true);
     els.btnEdit.style.display = 'none';
     persistEditEntryShown(false);
     els.editBanner.style.display = '';
@@ -1469,11 +1490,7 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
   function exitEditMode() {
     state.editMode = false;
     persistEditMode(false);
-    els.btnAdd.style.display = 'none';
-    els.btnExport.style.display = 'none';
-    els.btnImportJson.style.display = 'none';
-    els.btnBatchClear.style.display = 'none';
-    els.btnDone.style.display = 'none';
+    setEditControls(false);
     els.btnEdit.style.display = '';
     persistEditEntryShown(true);  // 点完成后保留入口按钮显示，方便再次进入
     els.editBanner.style.display = 'none';
@@ -1565,7 +1582,7 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
         bm.category = category;
         bm.notes = notes;
       }
-      showToast('已保存（需导出后公开生效）');
+      showToast('已保存（点「保存」写入文件）');
     } else {
       var newBm = {
         id: genId(),
@@ -1575,7 +1592,7 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
         notes: notes
       };
       state.data.bookmarks.unshift(newBm);
-      showToast('已新增（需导出后公开生效）');
+      showToast('已新增（点「保存」写入文件）');
     }
 
     closeEditModal();
@@ -1591,7 +1608,7 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
         break;
       }
     }
-    showToast('已删除（需导出后公开生效）');
+    showToast('已删除（点「保存」写入文件）');
     closeEditModal();
     renderAll();
   }
@@ -1605,8 +1622,54 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
         break;
       }
     }
-    showToast('已删除（需导出后公开生效）');
+    showToast('已删除（点「保存」写入文件）');
     renderAll();
+  }
+
+  /* ============================================
+     保存到本地服务（写回 tools/data/bookmarks.json）
+     ============================================ */
+  function todayStr() {
+    var d = new Date();
+    var p = function(n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
+  function saveToServer() {
+    if (!state.data || els.btnSaveServer.disabled) return;
+
+    /* 刷新更新时间戳，跟其他工具的数据文件体例一致 */
+    if (!state.data.meta) state.data.meta = {};
+    state.data.meta.updatedAt = todayStr();
+
+    var count = (state.data.bookmarks || []).length;
+    els.btnSaveServer.disabled = true;
+    var label = $('btnSaveServerLabel');
+    if (label) label.textContent = '保存中…';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state.data)
+    })
+      .then(function(res) {
+        return res.json().catch(function() { throw new Error('HTTP ' + res.status); });
+      })
+      .then(function(d) {
+        if (!d || d.status !== 'ok') throw new Error((d && d.message) || '写入失败');
+        showToast('已保存 ' + d.count + ' 条到 tools/data/bookmarks.json（提交推送后线上生效）');
+      })
+      .catch(function(err) {
+        if (isLocalHost()) {
+          showToast('保存失败：' + err.message + '（本地服务是否在运行？）');
+        } else {
+          showToast('保存仅本地可用：请在本机打开 http://127.0.0.1:8080/tools/bookmark-manager.html');
+        }
+      })
+      .then(function() {
+        els.btnSaveServer.disabled = false;
+        if (label) label.textContent = '保存';
+      });
   }
 
   /* ============================================
@@ -1695,7 +1758,7 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
     closeBatchClearModal();
     if (state.currentCategory === key) state.currentCategory = 'all';
     renderAll();
-    showToast('已清除「' + catLabel + '」分类下 ' + count + ' 条收藏（需导出后公开生效）');
+    showToast('已清除「' + catLabel + '」分类下 ' + count + ' 条收藏（点「保存」写入文件）');
   }
 
   function setupBatchClear() {
@@ -1726,6 +1789,9 @@ body.is-editing .bm-card .bm-cover-badge { opacity: 0.3; }
     els.btnAdd.addEventListener('click', function() {
       openEditModal(null);
     });
+
+    /* 保存到本地服务（写回文件） */
+    els.btnSaveServer.addEventListener('click', saveToServer);
 
     /* 导出 */
     els.btnExport.addEventListener('click', exportJson);
