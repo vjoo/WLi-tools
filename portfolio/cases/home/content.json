@@ -20,7 +20,8 @@
       "animatedParams": {
         "cableColor": "#4d70ff",
         "pulseColor": "#4775ff"
-      }
+      },
+      "scrollEffect": true
     },
     {
       "id": "smt8s8hy0zreq",
@@ -273,12 +274,6 @@
           "imageH": 800
         }
       ]
-    },
-    {
-      "id": "s1a041fe0b109d611",
-      "type": "stats",
-      "title": "移动测试",
-      "image": "/portfolio/cases/home/uploads/1787669720322_xnlxbi.jpg"
     }
   ]
 }

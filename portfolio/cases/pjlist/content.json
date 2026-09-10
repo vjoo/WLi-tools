@@ -28,7 +28,8 @@
         "color2": "#4e54a6",
         "backgroundColor": "#0a0a0a"
       },
-      "textLayout": "center"
+      "textLayout": "center",
+      "scrollEffect": true
     },
     {
       "id": "smspt62o385co-title",

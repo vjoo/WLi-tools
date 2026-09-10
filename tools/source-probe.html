@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="ZPGu3p5vpaYgQeffbwRxIf">
+<head data-page-node-id="IMk7vswgnAUHOb9VFnFJuF">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:*; frame-ancestors 'none'; base-uri 'self';" data-page-node-id="cvdRTb36xbyCefzs7I9JL9">
+<meta charset="UTF-8" data-page-node-id="7qxW4fsRTeHyKktsri9sMq">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="0yG3iNQ4elmF7pXUvCrKWf">
+<title>W.-片源测速</title>
+<link rel="stylesheet" href="common.css" data-page-node-id="Oe4scHIeBnwPIecHPCPHCA">
+<style>
+  /* 主视觉：居中输入 */
+  .hero { text-align: center; padding-block: 12px 40px; }
+  .hero h1 { font-size: var(--fs-2xl); font-weight: 600; letter-spacing: -0.02em; color: var(--ink); }
+  .hero p { margin-top: 10px; font-size: var(--fs-base); color: var(--ink-tertiary); line-height: 1.6; }
+
+  .probe-box {
+    display: flex; align-items: center; gap: 8px;
+    max-width: 600px; margin: 28px auto 0; padding: 6px 6px 6px 22px;
+    background: var(--bg-white); border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .probe-box:focus-within { border-color: var(--ink); box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); }
+  .probe-box input {
+    flex: 1; min-width: 0; padding: 11px 0;
+    border: none; background: transparent; outline: none;
+    font-size: var(--fs-base); color: var(--ink); font-family: inherit;
+  }
+  .probe-box input::placeholder { color: var(--ink-quaternary); }
+  .probe-box .btn-filled { flex-shrink: 0; padding: 11px 22px; }
+
+  .field-hint { font-size: var(--fs-xs); color: var(--ink-quaternary); margin-top: 6px; line-height: 1.5; }
+
+  /* 日志 */
+  .log {
+    background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius-md);
+    padding: 14px 16px; font-size: var(--fs-xs); line-height: 1.8; color: var(--ink-secondary);
+    font-family: 'SF Mono', SFMono-Regular, Consolas, Menlo, monospace; margin-bottom: 20px;
+  }
+  .log:empty { display: none; }
+  .log .err { color: var(--red); }
+  .log .ok { color: #1d8a3e; }
+
+  /* 结果表 */
+  .result-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .result-title { font-size: var(--fs-lg); font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+  .result-sub { font-size: var(--fs-xs); color: var(--ink-quaternary); }
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--border-light); border-radius: var(--radius-md); }
+  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); min-width: 640px; }
+  th {
+    text-align: left; padding: 11px 14px; font-weight: 500; font-size: var(--fs-xs);
+    color: var(--ink-tertiary); background: var(--bg); border-bottom: 1px solid var(--border-light);
+    white-space: nowrap;
+  }
+  td { padding: 13px 14px; border-bottom: 1px solid var(--border-light); color: var(--ink); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.best { background: rgba(52, 199, 89, 0.06); }
+  .rank {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%; background: var(--bg);
+    font-size: var(--fs-xs); color: var(--ink-tertiary); font-weight: 500;
+  }
+  tr.best .rank { background: var(--green); color: #fff; }
+  .name-cell { font-weight: 500; max-width: 160px; }
+  .name-cell .sub { font-weight: 400; font-size: var(--fs-xs); color: var(--ink-quaternary); margin-top: 2px; }
+  .url-cell {
+    font-family: 'SF Mono', SFMono-Regular, Consolas, Menlo, monospace; font-size: var(--fs-xs);
+    color: var(--ink-tertiary); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .speed-val { font-size: var(--fs-md); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .speed-val .unit { font-size: var(--fs-xs); font-weight: 400; color: var(--ink-tertiary); margin-left: 2px; }
+  .pill {
+    display: inline-block; padding: 2px 9px; border-radius: var(--radius-pill);
+    font-size: var(--fs-xs); font-weight: 500;
+  }
+  .pill.green { background: rgba(52,199,89,0.12); color: #1d8a3e; }
+  .pill.orange { background: rgba(255,149,0,0.14); color: #a35b00; }
+  .pill.red { background: rgba(255,59,48,0.12); color: var(--red); }
+  .pill.gray { background: var(--bg); color: var(--ink-tertiary); }
+  .copy-btn {
+    border: 1px solid var(--border-light); background: var(--bg-white); color: var(--ink-secondary);
+    border-radius: 6px; padding: 4px 10px; font-size: var(--fs-xs); cursor: pointer; transition: all 0.2s;
+  }
+  .copy-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .empty { padding: 40px; text-align: center; color: var(--ink-quaternary); font-size: var(--fs-sm); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(12px);
+    background: var(--fill-black); color: #fff; padding: 10px 20px; border-radius: var(--radius-pill);
+    font-size: var(--fs-sm); opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 3000;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+<script src="nav.js"></script>
+</head>
+<body data-page-node-id="PixpRwdAAbq9xPmpHfaydo">
+<main class="section" data-page-node-id="8AVjW84SENvKahoiMfPcQv">
+  <div class="section-inner" data-page-node-id="as6ND2UvFSIoCHWWe0nneN">
+
+    <header class="hero" data-page-node-id="J05TMQCF4tC5JndLKQsbAO">
+      <h1 data-page-node-id="JKZACPw5sNJCtRLgJzRHXo">片源测速</h1>
+      <p data-page-node-id="T0nuwvt2Euz05NHSDL53SF">粘贴播放页地址，自动提取全部线路并逐条测速，按快慢排序。</p>
+
+      <div class="probe-box" data-page-node-id="0QeT7wRLCHiaiEZdDlRGXl">
+        <input id="urlInput" type="url" placeholder="粘贴播放页地址" spellcheck="false" autocomplete="off" data-page-node-id="PAPZzgScgm7Xft5dtOZvPQ">
+        <button class="btn-filled" id="btnProbe" data-page-node-id="ka0pAKtAQT5NLwB0GZ0dj9">开始测速</button>
+      </div>
+    </header>
+
+    <div class="log" id="log" data-page-node-id="QzqR7o0pzmo55aXf66upoX"></div>
+
+    <div id="resultWrap" hidden data-page-node-id="muB1vX6SABqzHpYNAqAQod">
+      <div class="result-head" data-page-node-id="joUSeAz6lKfme5ElhyAAWN">
+        <span class="result-title" data-page-node-id="tkEbCt50vHaF7T3hQVf7i6">测速结果</span>
+        <span class="result-sub" id="resultSub" data-page-node-id="GXV3MVTCdEJOjz2yw9jYiW"></span>
+      </div>
+      <div class="tbl-wrap" data-page-node-id="4CEcrOVvCNs4h5fTGnGIyA">
+        <table data-page-node-id="NwUe70KKYCGL6rZ99LQ90e">
+          <thead data-page-node-id="RjKPP5CKDpdiMONn51krYj">
+            <tr data-page-node-id="dACEZOQSNDQsx4VEEPswk0">
+              <th style="width:44px" data-page-node-id="j7spy5uPtcy1FAjj7wp0uD">#</th>
+              <th data-page-node-id="zYsvMD4GbPpGEE7Y34V650">名称</th>
+              <th style="width:96px" data-page-node-id="Ska1aLlAr75Cjyj5HeZjXc">速度</th>
+              <th style="width:80px" data-page-node-id="et0B9VehAGCuv8TxYv2nsz">首包</th>
+              <th style="width:110px" data-page-node-id="2chqQ2vAXgChqHUFxePjaV">流畅度</th>
+              <th data-page-node-id="g8TRFCjYx2Zb6uFZow6eZT">地址</th>
+              <th style="width:64px" data-page-node-id="3UoB9alngWWWnypgCnw6vQ"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody" data-page-node-id="4F8mdVtQCKZd6jrYJzv6bk"></tbody>
+        </table>
+      </div>
+      <div class="field-hint" style="margin-top:10px" data-page-node-id="4tFsyYJNH9DXnrigRh6ejS">
+        流畅度 = 分片下载耗时 ÷ 分片时长，小于 1 才不会卡顿；越小越稳。首包为 TTFB 中位数。
+      </div>
+    </div>
+
+  </div>
+</main>
+<div class="toast" id="toast" data-page-node-id="3CoGlmRVdDUiGL0aK26Zx4"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  // 解析服务地址（改端口只改这里一处）
+  var API_BASE = 'http://127.0.0.1:8899';
+  var logEl = $('log'), tbody = $('tbody'), resultWrap = $('resultWrap'), resultSub = $('resultSub');
+
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._tm);
+    t._tm = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+  function log(msg, cls) {
+    var d = document.createElement('div');
+    if (cls) d.className = cls;
+    d.textContent = msg;
+    logEl.appendChild(d);
+  }
+  function clearLog() { logEl.innerHTML = ''; }
+  function base() { return API_BASE; }
+
+  function mb(mbps) { return mbps / 8; }
+
+  // 出场顺序：可用线路按速度降序（最快在前），失败的次要指标保持原顺序排到最后
+  function sortRows(rows) {
+    return rows.slice().sort(function (a, b) {
+      if (!!a.ok !== !!b.ok) return a.ok ? -1 : 1;
+      return (b.mbps || 0) - (a.mbps || 0);
+    });
+  }
+
+  function render(list) {
+    var rows = sortRows(list || []);
+    tbody.innerHTML = '';
+    resultWrap.hidden = false;
+    var okCount = rows.filter(function (r) { return r.ok; }).length;
+    resultSub.textContent = '共 ' + rows.length + ' 条，可用 ' + okCount + ' 条 · 按速度降序';
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">没有可展示的结果</td></tr>';
+      return;
+    }
+    rows.forEach(function (r, i) {
+      var tr = document.createElement('tr');
+      if (r.ok && i === 0) tr.className = 'best';
+
+      var rank = document.createElement('td');
+      rank.innerHTML = '<span class="rank">' + (i + 1) + '</span>';
+      tr.appendChild(rank);
+
+      var name = document.createElement('td');
+      name.className = 'name-cell';
+      var nm = r.name || (r.url ? r.url.split('/')[2] : '未命名');
+      name.innerHTML = escapeHtml(nm) + '<div class="sub">' + (r.type === 'hls' ? 'HLS' : '文件') + '</div>';
+      tr.appendChild(name);
+
+      var sp = document.createElement('td');
+      if (r.ok) {
+        sp.innerHTML = '<span class="speed-val">' + mb(r.mbps).toFixed(2) + '<span class="unit">MB/s</span></span>';
+      } else {
+        sp.innerHTML = '<span class="pill gray">失败</span>';
+      }
+      tr.appendChild(sp);
+
+      var tt = document.createElement('td');
+      tt.textContent = r.ok ? (r.ttfb + ' ms') : '—';
+      tt.style.color = 'var(--ink-tertiary)';
+      tr.appendChild(tt);
+
+      var ra = document.createElement('td');
+      if (r.ok && r.ratio != null) {
+        var cls = r.ratio < 0.7 ? 'green' : (r.ratio < 1 ? 'orange' : 'red');
+        var label = r.ratio < 0.7 ? '流畅' : (r.ratio < 1 ? '偏紧' : '会卡');
+        ra.innerHTML = '<span class="pill ' + cls + '">' + label + ' ' + r.ratio + '</span>';
+      } else if (r.ok) {
+        ra.innerHTML = '<span class="pill green">可用</span>';
+      } else {
+        ra.innerHTML = '<span class="pill red">' + escapeHtml((r.error || '不可用').slice(0, 14)) + '</span>';
+      }
+      tr.appendChild(ra);
+
+      var url = document.createElement('td');
+      url.className = 'url-cell';
+      url.textContent = r.url || '';
+      url.title = r.url || '';
+      tr.appendChild(url);
+
+      var act = document.createElement('td');
+      var btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = '复制';
+      btn.addEventListener('click', function () {
+        copy(r.url || '');
+      });
+      act.appendChild(btn);
+      tr.appendChild(act);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function copy(text) {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('已复制地址'); }, function () { fallbackCopy(text); });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast('已复制地址'); } catch (e) { toast('复制失败'); }
+    document.body.removeChild(ta);
+  }
+
+  function post(path, payload) {
+    return fetch(base() + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.json(); });
+  }
+
+  var urlInput = $('urlInput'), btnProbe = $('btnProbe');
+  var btnLabel = btnProbe.textContent;
+
+  function doProbe() {
+    var url = urlInput.value.trim();
+    if (!url) { toast('请先粘贴播放页地址'); urlInput.focus(); return; }
+    if (btnProbe.disabled) return;
+    clearLog();
+    resultWrap.hidden = true;
+    btnProbe.disabled = true;
+    btnProbe.textContent = '探测并测速中…';
+    log('POST /api/probe ' + url);
+    post('/api/probe', {
+      url: url,
+      speed: true,
+      segs: 3,
+      timeout: 15
+    }).then(function (d) {
+      (d.log || []).forEach(function (l) { log('· ' + l); });
+      if (d.error) log('× ' + d.error, 'err');
+      if (d.sources && d.sources.length) log('✓ 提取到 ' + d.sources.length + ' 个片源', 'ok');
+      if (d.speeds && d.speeds.length) {
+        log('✓ 测速完成，耗时 ' + (d.elapsed || 0) + 's', 'ok');
+        render(d.speeds);
+      }
+    }).catch(function (e) {
+      log('× 请求失败：' + e.message + '（解析服务是否已启动？）', 'err');
+    }).then(function () {
+      btnProbe.disabled = false;
+      btnProbe.textContent = btnLabel;
+    });
+  }
+
+  btnProbe.addEventListener('click', doProbe);
+  urlInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); doProbe(); }
+  });
+
+})();
+</script>
+</body>
+</html>

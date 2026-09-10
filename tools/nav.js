@@ -53,6 +53,7 @@
       label: '查询参考',
       tools: [
         { name: '3D耗材管理', href: './filament-manager.html' },
+        { name: '3D模型预览', href: './model-viewer.html' },
         { name: '音标速查', href: './phonetic-chart.html' },
         { name: '自助校历生成', href: './school-calendar.html' }
       ]
@@ -65,9 +66,9 @@
       ]
     },
     {
-      label: '其他工具',
+      label: '网络工具',
       tools: [
-        { name: '3D模型预览', href: './model-viewer.html' },
+        { name: '片源测速', href: './source-probe.html' },
         { name: '免费代理订阅', href: './proxy-sub.html' }
       ]
     }

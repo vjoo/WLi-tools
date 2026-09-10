@@ -1939,6 +1939,12 @@
             margin-top: 4px;
         }
 
+        .extreme-item-brand {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
         .extreme-item-value {
             font-size: 16px;
             font-weight: 600;
@@ -5619,6 +5625,7 @@
                         <div>
                             <div class="extreme-item-label">最贵耗材</div>
                             <div class="extreme-item-name">${mostExpensive ? this.escHtml(mostExpensive.name) : '--'}</div>
+                            <div class="extreme-item-brand">${mostExpensive ? this.escHtml(mostExpensive.brand || '未分类') : ''}</div>
                         </div>
                         <div class="extreme-item-value">${mostExpensive ? '&yen;' + getAvgPrice(mostExpensive).toFixed(2) + (mostExpensive.isBundle ? ' <span style="font-size:11px;color:var(--text-secondary)">(均价)</span>' : '') : '--'}</div>
                     </div>
@@ -5626,6 +5633,7 @@
                         <div>
                             <div class="extreme-item-label">最便宜耗材</div>
                             <div class="extreme-item-name">${cheapest ? this.escHtml(cheapest.name) : '--'}</div>
+                            <div class="extreme-item-brand">${cheapest ? this.escHtml(cheapest.brand || '未分类') : ''}</div>
                         </div>
                         <div class="extreme-item-value">${cheapest ? '&yen;' + getAvgPrice(cheapest).toFixed(2) + (cheapest.isBundle ? ' <span style="font-size:11px;color:var(--text-secondary)">(均价)</span>' : '') : '--'}</div>
                     </div>
@@ -5633,6 +5641,7 @@
                         <div>
                             <div class="extreme-item-label">最高评分</div>
                             <div class="extreme-item-name">${highestRated ? this.escHtml(highestRated.name) : '--'}</div>
+                            <div class="extreme-item-brand">${highestRated ? this.escHtml(highestRated.brand || '未分类') : ''}</div>
                         </div>
                         <div class="extreme-item-value">${highestRated ? highestRated.rating + ' 分' : '--'}</div>
                     </div>
@@ -5640,6 +5649,7 @@
                         <div>
                             <div class="extreme-item-label">最低评分</div>
                             <div class="extreme-item-name">${lowestRated ? this.escHtml(lowestRated.name) : '--'}</div>
+                            <div class="extreme-item-brand">${lowestRated ? this.escHtml(lowestRated.brand || '未分类') : ''}</div>
                         </div>
                         <div class="extreme-item-value">${lowestRated ? lowestRated.rating + ' 分' : '--'}</div>
                     </div>

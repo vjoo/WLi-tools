@@ -171,6 +171,17 @@
       "enabled": true
     },
     {
+      "id": "source-probe",
+      "name": "片源测速",
+      "file": "source-probe.html",
+      "category": "network",
+      "icon": "globe",
+      "iconColor": "green",
+      "description": "粘贴播放页地址，自动过 JS 挑战、提取片源并串行测速，按快慢排序找出最快线路",
+      "keywords": ["片源", "测速", "m3u8", "hls", "线路", "视频", "probe", "speed", "播放源"],
+      "enabled": true
+    },
+    {
       "id": "bookmark-manager",
       "name": "精选收藏夹",
       "file": "bookmark-manager.html",

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; media-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self';">
+<html lang="zh-CN" data-page-node-id="C77EE5f8EuwosgwC7lxmSF">
+<head data-page-node-id="AUg1aB6EWn0XZodiiT8J7a">
+<meta charset="UTF-8" data-page-node-id="IiA0qwDcflwTdVF5TJyT1S">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" data-page-node-id="AidVfXQp6clwG21bTbEZYK">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; media-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self';" data-page-node-id="sTIKzsit7k0U5NEVkOAPHx">
 <title>W. Block</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -129,10 +129,15 @@ body {
 .nav-item.active .nav-num { background: var(--accent-light); color: var(--accent-color); }
 
 /* ===== 侧边栏一级菜单 ===== */
-.side-menu { padding: 12px 10px 10px; margin-bottom: 4px; }
+/* .side-menu 作为 flex column 并 flex:1，吸收 footer 上方全部剩余空间；
+   配合 .side-group[sections]{flex:1} 让板块列表撑满中间区域，消除「板块列表与 footer 之间」的空隙。 */
+.side-menu {
+  padding: 12px 10px 10px; margin-bottom: 4px;
+  display: flex; flex-direction: column; flex: 1; min-height: 0;
+}
 .side-menu-item {
   display: flex; align-items: center; gap: 9px; width: 100%; box-sizing: border-box;
-  padding: 10px 12px; margin: 2px 0;
+  padding: 10px 12px; margin: 2px 0; flex-shrink: 0;
   border: none; border-radius: var(--radius-md); background: transparent;
   color: var(--text-secondary); font-size: 13.5px; font-weight: 600; cursor: pointer;
   text-align: left; transition: background-color .28s cubic-bezier(.22, .61, .36, 1), color .28s cubic-bezier(.22, .61, .36, 1), box-shadow .28s cubic-bezier(.22, .61, .36, 1);
@@ -149,28 +154,47 @@ body {
 .side-group .side-menu-item.active .side-arrow { transform: rotate(180deg); opacity: .8; }
 /* 一级菜单手动收起子菜单时：箭头归位，不再展开 */
 .side-group.collapsed .side-menu-item.active .side-arrow { transform: rotate(0); opacity: .55; }
+/* 板块管理组：仅在子菜单展开时（.side-sub.open）才 flex:1 撑满，
+   吸收「板块管理按钮下方 → 其它菜单上方」的剩余空间，使板块列表撑满中间区域（无空隙、超长才滚动）。
+   收到收起时 group 恢复自然高度（不撑满），避免「其它菜单被挤到底部、中间空一段」的老问题（:has 现代浏览器支持）。 */
+.side-group[data-group="sections"]:has(.side-sub.open) {
+  display: flex; flex-direction: column;
+  flex: 1 1 auto; min-height: 0;
+}
 /* 板块管理 展开子菜单（板块列表，arco 风格：无竖线连接，靠缩进与底色区分层级） */
 .side-sub {
+  display: flex; flex-direction: column;
   padding: 0;
   max-height: 0;
   opacity: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  transition: max-height .28s cubic-bezier(.22, .61, .36, 1), opacity .22s ease, padding .28s cubic-bezier(.22, .61, .36, 1);
+  overflow: hidden;
+  flex: 0 1 auto;
+  transition: opacity .22s ease, padding .28s cubic-bezier(.22, .61, .36, 1);
 }
 .side-sub.open {
-  /* 超出一定高度后出现滚动条；小屏时按视口高度收缩，避免超出屏幕 */
-  max-height: min(520px, calc(100vh - 190px));
+  /* 用 flex 弹性撑满剩余空间（而非估算的 max-height calc）：
+     高度由父级 flex 决定 → 板块列表始终撑满「按钮以下、其它菜单以上」的区域，消除中间空隙；
+     内容超出该区域时才由内部 nav-menu 滚动。收起时靠 max-height:0 + opacity 淡出。 */
+  flex: 1 1 auto; min-height: 0;
+  max-height: none;
   opacity: 1;
   padding: 4px 6px 10px;
 }
-.side-sub .nav-menu { display: block; padding: 0; max-height: none; }
+.side-sub .nav-menu {
+  display: block; padding: 0; max-height: none;
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+}
 .side-sub .nav-item { margin: 2px 0; padding: 9px 12px 9px 18px; font-size: 13px; }
 .side-sub .nav-item .nav-num { font-size: 10px; }
 .side-sub .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
 .side-sub .nav-item.active { background: var(--accent-light); color: var(--accent-color); box-shadow: none; }
 .side-sub .nav-item.active .nav-num { background: #ffffff; color: var(--accent-color); }
-.sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--border-color); }
+.sidebar-footer {
+  padding: 12px 16px; border-top: 1px solid var(--border-color);
+  margin-top: auto;   /* 固定居底：footer 始终贴近侧边栏底部，不因上方内容不足而悬空 */
+  flex-shrink: 0;
+}
 .sf-copy { text-align: center; padding-top: 8px; color: var(--text-muted); font-size: 11px; }
 .sf-desc { color: var(--text-muted); font-size: 11px; line-height: 1.6; margin-bottom: 8px; }
 .sidebar-add-btn { padding: 0 0 8px; }
@@ -649,19 +673,28 @@ body {
 /* ===== Cards Grid ===== */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
+  /* 桌面 3 列；中等屏 2 列；窄屏 1 列。minmax 320 保证缩略图在线框 + 标题下还清晰 */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 1180px) {
+  .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .cards-grid { grid-template-columns: 1fr; }
 }
 .card-item {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-radius: 22px;
   overflow: hidden;
   transition: all .25s cubic-bezier(.22,.61,.36,1);
   display: flex;
   flex-direction: column;
   cursor: pointer;
   position: relative;
+  padding: 16px;
+  gap: 14px;
 }
 .card-item:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--accent-color); }
 .card-item.selected { border-color: var(--accent-color); box-shadow: 0 0 0 2px var(--accent-color); }
@@ -675,7 +708,8 @@ body {
   cursor: pointer;
   display: flex;
   align-items: stretch;
-  min-height: 200px;
+  min-height: 220px;
+  border-radius: 22px;
 }
 .add-card:hover { border-color: var(--accent-color); background: var(--accent-light); transform: translateY(-2px); }
 .add-card-btn {
@@ -688,368 +722,178 @@ body {
 .add-card:hover .add-card-btn { color: var(--accent-color); }
 
 .card-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 12px; border-bottom: 1px solid var(--border-light); gap: 8px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 0; gap: 10px;
   position: relative;
   z-index: 2;
-  background: var(--bg-primary);
+  background: transparent;
 }
-.card-head-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.card-type-badge {
-  display: inline-flex; align-items: center; padding: 2px 8px;
-  border-radius: 999px; font-size: 11px; font-weight: 700;
-  background: var(--accent-light); color: var(--accent-color);
-  flex-shrink: 0;
-}
-.card-order { font-size: 11px; color: var(--text-muted); font-weight: 700; flex-shrink: 0; }
-.card-actions {
-  display: flex; gap: 4px; opacity: 0; transition: opacity .2s;
-}
-.card-item:hover .card-actions { opacity: 1; }
-.card-thumb-area {
-  width: 100%;
-  aspect-ratio: 16/10;
-  background: var(--bg-hover);
-  overflow: hidden;
-  position: relative;
-}
-.card-thumb-area img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.card-thumb-area > div { height: 100%; }
-
-/* ===== Hero Card Thumbnail ===== */
-.ct-hero {
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-}
-.ct-hero .hero-title-overlay {
+.card-head-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.card-order-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 40px; height: 40px;
+  border-radius: 12px;
+  background: var(--accent-color);
   color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+  letter-spacing: -.01em;
+  box-shadow: 0 2px 8px rgba(0,111,255,.22);
+}
+.card-head-titles {
+  display: flex; flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding-top: 2px;
+}
+.card-title {
   font-size: 15px;
   font-weight: 700;
-  line-height: 1.4;
-  text-align: center;
-  max-height: 100%;
+  color: var(--text-primary);
+  line-height: 1.25;
+  white-space: nowrap;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
   text-overflow: ellipsis;
-  word-break: break-word;
 }
-.ct-hero .hero-play-icon {
-  position: absolute;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-.ct-hero .hero-play-icon svg { width: 16px; height: 16px; color: #fff; margin-left: 2px; }
-
-/* ===== Intro Card Thumbnail ===== */
-.ct-intro {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--bg-secondary);
-}
-.ct-intro .meta-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  background: var(--bg-active);
-  border-radius: var(--radius-pill);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  align-self: flex-start;
-}
-.ct-intro .intro-heading {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--text-primary);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-/* ===== Parallax Card Thumbnail ===== */
-.ct-parallax {
-  position: relative;
-  overflow: hidden;
-}
-.ct-parallax .base-layer {
-  position: absolute;
-  inset: 0;
-  opacity: 0.2;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--bg-hover);
-}
-.ct-parallax .overlay-layer {
-  position: absolute;
-  inset: 10%;
-  border-radius: var(--radius-sm);
-  background-size: cover;
-  background-position: center;
-  background-color: var(--accent-light);
-  box-shadow: var(--shadow-lg);
-}
-.ct-parallax .parallax-empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
+.card-slug {
   font-size: 12px;
-}
-
-/* ===== Text Card Thumbnail ===== */
-.ct-text {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: var(--bg-secondary);
-}
-.ct-text .text-heading {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.4;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-.ct-text .text-body {
-  font-size: 11px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  border-left: 2px solid var(--accent-color);
-  padding-left: 8px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  font-style: italic;
-}
-
-/* ===== Showcase Card Thumbnail ===== */
-.ct-showcase {
-  display: grid;
-  grid-template-columns: 60% 40%;
-  background: var(--bg-secondary);
-}
-.ct-showcase .sc-image {
-  background-size: cover;
-  background-position: center;
-  background-color: var(--bg-hover);
-  min-height: 100%;
-}
-.ct-showcase .sc-info {
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  overflow: hidden;
-}
-.ct-showcase .sc-label {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  background: var(--accent-light);
-  border-radius: var(--radius-pill);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--accent-color);
-  align-self: flex-start;
-}
-.ct-showcase .sc-desc {
-  font-size: 11px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-}
-
-/* ===== Gallery Card Thumbnail ===== */
-.ct-gallery {
-  position: relative;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--bg-hover);
-}
-
-/* ===== Single Image Card ===== */
-.ct-single-image {
-  background-size: cover;
-  background-position: center;
-  background-color: var(--bg-hover);
-}
-
-/* ===== Brand Logo Card Thumbnail ===== */
-.ct-single { height: 100%; }
-.ct-single .ct-single-img {
-  width: 100%; height: 100%;
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-color: var(--bg-hover);
-}
-
-/* ===== Double Image Card ===== */
-.ct-double-image {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  background: var(--border-color);
-}
-.ct-double-image .di-half {
-  background-size: cover;
-  background-position: center;
-  background-color: var(--bg-hover);
-  min-height: 100%;
-}
-
-/* ===== Testimonial Card ===== */
-.ct-testimonial {
-  padding: 12px;
-  display: flex;
-  gap: 10px;
-  background: var(--bg-secondary);
-}
-.ct-testimonial .tm-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-color), #a855f7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-.ct-testimonial .tm-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.ct-testimonial .tm-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-.ct-testimonial .tm-role {
-  font-size: 11px;
   color: var(--text-muted);
-}
-.ct-testimonial .tm-quote {
-  font-size: 11px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin-top: 2px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-transform: lowercase;
+  line-height: 1.3;
+  white-space: nowrap;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
 }
-
-/* ===== Next Projects Card ===== */
-.ct-next-projects {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding: 8px;
-  background: var(--bg-secondary);
+.card-actions {
+  /* 浮在缩略图底部居中，不占 card-head 行空间 */
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  z-index: 3;
+  display: flex; gap: 4px;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition: opacity .2s ease, transform .2s ease;
+  padding: 5px 6px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, .16);
 }
-.ct-next-projects .np-mini {
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+.card-item:hover .card-thumb-area .card-actions { opacity: 1; transform: translate(-50%, 0); }
+/* 键盘 focus 时也显示（无障碍：键盘用户不能只靠 hover） */
+.card-item:focus-within .card-thumb-area .card-actions { opacity: 1; transform: translate(-50%, 0); }
+.card-thumb-area {
+  width: 100%;
+  aspect-ratio: 16/11;
   position: relative;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--bg-hover);
-  aspect-ratio: 1/1;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #f1f5f9;
 }
-.ct-next-projects .np-mini .np-overlay {
+.card-thumb-area img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-thumb-box {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%);
-  display: flex;
-  align-items: flex-end;
-  padding: 6px;
-}
-.ct-next-projects .np-mini .np-overlay span {
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.2;
+  border-radius: 18px;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  background: #f1f5f9;
 }
 
-/* ===== Clients / Stats / Services / Team Card Thumbnails ===== */
-.ct-clients { padding: 10px; display: flex; flex-direction: column; gap: 8px; background: var(--bg-secondary); height: 100%; }
-.ct-clients-title, .ct-stats-title, .ct-services-title, .ct-team-title {
-  font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .03em;
+/* ===== Wireframe Thumbnails（统一线框缩略图） =====
+   设计语言：浅灰块 = 图片/视频/数据占位；灰条 = 文字行；小圆 = 头像/图标。
+   不依赖真实图片，零网络、零 CLS，不同组件结构一眼可辨。 */
+.wf {
+  position: absolute; inset: 0;
+  padding: 11px;
+  display: flex; flex-direction: column; gap: 7px;
+  background: var(--bg-secondary, #f3f4f6);
+  overflow: hidden;
 }
-.ct-clients-logos { display: flex; flex-wrap: wrap; gap: 6px; }
-.ct-logo-mini {
-  width: 52px; height: 26px; border-radius: 4px; background-size: contain; background-position: center;
-  background-repeat: no-repeat; background-color: #fff; border: 1px solid var(--border-light);
+.wf.f0 { padding: 0; }
+.wf-center { align-items: center; justify-content: center; }
+.wf-row { display: flex; align-items: stretch; gap: 7px; }
+.wf-grid { display: grid; }
+
+.wf-bar {
+  display: block; height: 8px; border-radius: 4px;
+  background: var(--sk-line, #d7dae1); flex-shrink: 0;
 }
-.ct-logo-text {
+.wf-bar.t { height: 12px; background: var(--sk-line-2, #b4bac4); border-radius: 6px; }
+.wf-bar.s { height: 7px; }
+.wf-w30{width:30%}.wf-w35{width:35%}.wf-w40{width:40%}.wf-w45{width:45%}.wf-w50{width:50%}
+.wf-w55{width:55%}.wf-w60{width:60%}.wf-w70{width:70%}.wf-w80{width:80%}.wf-w90{width:90%}
+
+.wf-media {
+  position: relative; background: var(--sk-media, #e6e8ec);
+  border-radius: 6px; flex-shrink: 0; overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.03);
+}
+.wf-media.fill { position: absolute; inset: 0; border-radius: 0; }
+
+.wf-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--sk-media, #e6e8ec); flex-shrink: 0;
+}
+.wf-chip {
+  display: inline-block; height: 14px; width: 64px; border-radius: 999px;
+  background: var(--accent-light, #fdeee6); flex-shrink: 0;
+}
+.wf-stat {
+  background: #fff; border-radius: 9px; padding: 9px 9px;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 5px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04);
+  min-width: 0; overflow: hidden;
+}
+.wf-stat-value {
+  display: block; width: 60%; height: 13px; border-radius: 4px;
+  background: var(--sk-line-2, #b4bac4);
+  margin-bottom: 2px;
+}
+.wf-scene-card {
+  background: #fff; border-radius: 9px; padding: 8px 9px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 6px;
+  border: 1px solid var(--border-light, #f1f5f9);
+  min-width: 0; overflow: hidden;
+}
+.wf-scene-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; }
+.wf-scene-card-body { display: flex; flex-direction: column; gap: 3px; }
+.wf-ovl-bottom {
+  position: absolute; left: 12px; right: 12px; bottom: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.wf-play {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.85);
   display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; color: var(--text-muted);
 }
-.ct-muted { font-size: 11px; color: var(--text-muted); }
-.ct-stats { padding: 10px; display: flex; flex-direction: column; gap: 8px; background: var(--bg-secondary); height: 100%; }
-.ct-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.ct-stat { display: flex; flex-direction: column; gap: 2px; padding: 6px 4px; background: #fff; border-radius: 6px; text-align: center; }
-.ct-stat b { font-size: 13px; color: var(--accent-color); line-height: 1.1; }
-.ct-stat span { font-size: 9px; color: var(--text-muted); line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.ct-services { padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg-secondary); height: 100%; }
-.ct-service-row {
-  display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-primary);
-  padding: 5px 8px; background: #fff; border-radius: 6px;
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+.wf-play::after {
+  content: ''; border-style: solid; border-width: 5.5px 0 5.5px 9px;
+  border-color: transparent transparent transparent rgba(255,255,255,.85); margin-left: 2px;
 }
-.ct-service-num { font-size: 10px; font-weight: 700; color: var(--accent-color); flex-shrink: 0; }
-.ct-team { padding: 10px; display: flex; flex-direction: column; gap: 8px; background: var(--bg-secondary); height: 100%; }
-.ct-team-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.ct-member { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
-.ct-member-photo {
-  width: 100%; aspect-ratio: 1/1; border-radius: 50%; background-size: cover; background-position: center;
-  background-color: var(--accent-light);
+.wf-dots { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); display: flex; gap: 5px; }
+.wf-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.9); }
+.wf-dot.o { background: rgba(255,255,255,.4); }
+.wf-frame {
+  position: absolute; border-radius: 12px;
+  border: 3px solid var(--sk-media, #e6e8ec);
+  background: var(--sk-line, #d7dae1);
 }
-.ct-member-empty { display: flex; align-items: center; justify-content: center; color: var(--accent-color); font-size: 12px; font-weight: 700; }
-.ct-member span { font-size: 9px; color: var(--text-muted); line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wf-split { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(255,255,255,.75); transform: translateY(-1px); }
+.wf-icon {
+  position: absolute; width: 18px; height: 18px; border-radius: 5px;
+  background: var(--sk-media, #e6e8ec);
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.04);
+}
+.wf-muted { font-size: 12px; color: var(--text-muted); }
+.wf-empty { align-items: center; justify-content: center; }
 
-.card-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 56px; }
-.card-preview { font-size: 12px; color: var(--text-secondary); line-height: 1.55; word-break: break-word; }
-.card-preview.empty { color: var(--text-faint); font-style: italic; }
+
+.card-body { display: none; }
 
 /* ===== Empty State ===== */
 .empty-state {
@@ -1057,6 +901,18 @@ body {
   padding: 48px 20px; color: var(--text-faint); font-size: 13px; text-align: center;
 }
 .empty-state svg { width: 40px; height: 40px; opacity: .4; }
+
+/* ===== 就地新建页面表单（未选定页面时的板块管理空白态） ===== */
+#createPageInline { width: 100%; max-width: 720px; }
+.cip-head { margin-bottom: 20px; }
+.cip-title { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.cip-sub { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+.cip-form { display: flex; flex-direction: column; gap: 14px; }
+.cip-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.cip-actions { margin-top: 4px; display: flex; gap: 10px; }
+@media (max-width: 560px) {
+  .cip-grid { grid-template-columns: 1fr; }
+}
 
 /* ===== Form ===== */
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; min-width: 0; }
@@ -1074,6 +930,18 @@ body {
 .form-tab-panel { min-width: 0; }
 #editorFormContainer, #editorFormContainer > * { max-width: 100%; box-sizing: border-box; }
 .form-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+
+/* ===== Checkbox 字段（iOS 风格开关 + 行内文字） ===== */
+.field-checkbox { display: block; }
+.checkbox-switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-size: 13px; color: var(--text-primary); }
+.checkbox-switch input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+.switch-track { position: relative; width: 36px; height: 20px; background: #d2d2d7; border-radius: 999px; transition: background .2s; flex: none; }
+.switch-thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .2s; }
+.checkbox-switch input:checked + .switch-track { background: var(--accent-color, #34c759); }
+.checkbox-switch input:checked + .switch-track .switch-thumb { transform: translateX(16px); }
+.checkbox-switch input:focus-visible + .switch-track { box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
+.switch-text { font-weight: 600; }
+.checkbox-switch .field-hint { margin-left: 2px; }
 /* 字段辅助说明：标题旁圆圈感叹号，悬停弹出气泡（不占编辑界面空间） */
 .field-hint {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
@@ -1551,13 +1419,13 @@ body {
 /* ===== Type Picker Grid (in right panel) ===== */
 .type-picker-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 12px;
 }
 .type-picker-tile {
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 14px 12px;
+  padding: 12px;
   background: var(--bg-primary);
   cursor: pointer;
   transition: all .2s;
@@ -1565,8 +1433,8 @@ body {
   font-family: inherit;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  min-height: 112px;
+  gap: 8px;
+  min-height: 0;
 }
 .type-picker-tile:hover {
   border-color: var(--accent-color);
@@ -1574,36 +1442,41 @@ body {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
-.tp-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
-  background: var(--accent-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* 组件缩略图容器：比原图标(36px)大，但比板块管理的 card-thumb 小 */
+.tp-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-secondary, #f3f4f6);
+  position: relative;
   flex-shrink: 0;
 }
-.tp-icon svg { width: 18px; height: 18px; color: var(--accent-color); }
-.type-picker-tile:hover .tp-icon {
-  background: #fff;
-  box-shadow: var(--shadow-sm);
+.tp-thumb-box {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  overflow: hidden;
 }
+.tp-thumb-box > div { height: 100%; }
+/* 类型 tile 缩略图较小：内边距收窄，避免骨架内容过挤 */
+.tp-thumb-box .wf { padding: 7px; gap: 5px; }
+.type-picker-tile:hover .tp-thumb { box-shadow: var(--shadow-sm); }
 .tp-name {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
-}
-.tp-desc {
-  font-size: 11px;
-  color: var(--text-muted);
-  line-height: 1.6;
-  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tp-key {
   font-size: 10px;
   color: var(--text-faint);
   font-family: 'SFMono-Regular', Consolas, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .type-picker-header {
@@ -1856,6 +1729,8 @@ body {
   }
   .side-menu { display: flex; flex-direction: row; gap: 6px; padding: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 0; overflow-x: auto; }
   .side-menu-item { width: auto; margin: 0; padding: 9px 12px; white-space: nowrap; flex-shrink: 0; }
+  /* 移动端横向标签栏：板块组不再撑满，恢复自然宽度 */
+  .side-group[data-group="sections"] { flex: 0 0 auto; }
   .nav-menu { display: flex; padding: 8px; gap: 4px; flex-direction: row; overflow-x: auto; flex: 0 0 auto; }
   .nav-item { margin: 0; padding: 9px 12px; white-space: nowrap; }
   .sidebar-footer { display: none; }
@@ -1950,6 +1825,7 @@ body.auth-pending .pages-view { visibility: hidden; }
 .pages-badge.home { background: var(--accent-color); color: #fff; }
 .pages-ops { display: flex; gap: 8px; flex-shrink: 0; }
 .pages-ops .btn-sm { height: 30px; padding: 0 12px; font-size: 12px; }
+.pages-updated { flex-shrink: 0; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 .pages-empty { text-align: center; color: var(--text-muted); padding: 48px 0; font-size: 13px; }
 
 /* 全站主题切换（浅色 / 深色，存 cases.json 顶层 theme；仅前台组件与页面背景变色） */
@@ -2007,251 +1883,297 @@ body.auth-pending .pages-view { visibility: hidden; }
 .mbvis-launch-btn:hover{filter:brightness(1.08)}
 </style>
 </head>
-<body class="auth-pending">
+<body class="auth-pending" data-page-node-id="SSntV2k4CxS6XAtvGcOoHm">
 
 <!-- 登录遮罩层（未登录时全屏覆盖，防止外网篡改数据） -->
-<div class="auth-overlay" id="authOverlay">
-  <div class="auth-box">
-    <div class="auth-title">W. Block</div>
-    <div class="auth-title-sub">组件化建站平台</div>
-    <input class="auth-input" id="authUser" placeholder="账号" autocomplete="username">
-    <input class="auth-input" id="authPass" type="password" placeholder="密码" autocomplete="current-password">
-    <label class="auth-remember"><input type="checkbox" id="authRemember" checked> 记住登录（30 天内免输入）</label>
-    <button class="auth-btn" id="authBtn">登 录</button>
-    <div class="auth-err" id="authErr"></div>
+<div class="auth-overlay" id="authOverlay" data-page-node-id="McmIa6ahzuViPLlew1ZhBq">
+  <div class="auth-box" data-page-node-id="jFYCcQU8zXdGDK43l43fbq">
+    <div class="auth-title" data-page-node-id="SRwhgdbFN6SVwYZd45G5hF">W. Block</div>
+    <div class="auth-title-sub" data-page-node-id="xrPUMwZFDKkAUTeKfF2RKU">组件化建站平台</div>
+    <input class="auth-input" id="authUser" placeholder="账号" autocomplete="username" data-page-node-id="ZzqblbysavEuaAZ8Nz5XGC">
+    <input class="auth-input" id="authPass" type="password" placeholder="密码" autocomplete="current-password" data-page-node-id="mCNUzfsK2vXnOC98YaB1B7">
+    <label class="auth-remember" data-page-node-id="kwtNNQoaPZOKACgEsscTMA"><input type="checkbox" id="authRemember" checked data-page-node-id="YuFBnfzFZDJUxI4Gf0gAY4"> 记住登录（30 天内免输入）</label>
+    <button class="auth-btn" id="authBtn" data-page-node-id="bH1owo1iqJIXbgjg25HfqT">登 录</button>
+    <div class="auth-err" id="authErr" data-page-node-id="6Vo9uyJSahWmPOm1U7dKG3"></div>
   </div>
 </div>
 
 <!-- Global Nav -->
-<nav class="global-nav">
-  <div class="global-nav-content">
-    <div class="nav-brand">
-      <span class="dot"></span>
-      <span>W. Block</span>
-      <span class="sub">组件化建站平台</span>
+<nav class="global-nav" data-page-node-id="QtbI7bsW1PvjuJU5rFdtnf">
+  <div class="global-nav-content" data-page-node-id="odH25kmyvtSYAfn6s010WB">
+    <div class="nav-brand" data-page-node-id="Y9ifRw7bvir7Yphc2Pa3Mx">
+      <span class="dot" data-page-node-id="KV3xuxTYdciXVEOUHyZvBX"></span>
+      <span data-page-node-id="XldSltcL4SBgBXFwCjpIwF">W. Block</span>
+      <span class="sub" data-page-node-id="zCXWnWPpg4Ejn7MQV6pj1D">组件化建站平台</span>
     </div>
-    <div class="nav-links">
-      <a class="nav-link" id="btnPreview" href="index.html" target="_blank" title="在新标签页预览当前案例">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        <span>预览</span>
+    <div class="nav-links" data-page-node-id="nWZjmA5MaP4afvLkqDB14l">
+      <a class="nav-link" id="btnPreview" href="index.html" target="_blank" title="在新标签页预览当前案例" data-page-node-id="ToFmzrJG6MQBV7WfHtZTtE">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;" data-page-node-id="PrV4a8bI3N0sFQYYZDIbWs"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" data-page-node-id="GX0xj9VsSu7a0xdaavKi1L"/><polyline points="15 3 21 3 21 9" data-page-node-id="lGlrsgyvQjqNTpVru3EbZs"/><line x1="10" y1="14" x2="21" y2="3" data-page-node-id="3uAXmAex0GRF2XhjFZiP2y"/></svg>
+        <span data-page-node-id="2X61UXYb8QL5jlEXiNReUH">预览</span>
       </a>
-      <span class="nav-user" id="navUser"></span>
-      <button class="nav-logout" id="btnLogout" title="退出登录">退出</button>
+      <span class="nav-user" id="navUser" data-page-node-id="i89nQrxsy9EqIOy0eFxKp1"></span>
+      <button class="nav-logout" id="btnLogout" title="退出登录" data-page-node-id="9K4QLsTSaOjn5aZAAbOJPU">退出</button>
     </div>
   </div>
 </nav>
 
 <!-- 页面管理：新建 Modal -->
-<div class="modal-mask modal-narrow" id="pgModalNew">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">新建页面</div><button class="modal-x" data-close-modal>&times;</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label class="form-label">页面 Key（URL 标识，字母/数字/-/_）</label><input class="form-input" id="pgNewKey" placeholder="如 my-project"></div>
-      <div class="form-group"><label class="form-label">标题</label><input class="form-input" id="pgNewTitle" placeholder="如 My Project"></div>
-      <div class="form-grid">
-        <div class="form-group"><label class="form-label">页面类型</label>
-          <select class="form-select" id="pgNewType"><option value="detail">detail 案例详情</option><option value="home">home 首页</option><option value="list">list 列表</option><option value="about">about 关于</option></select>
+<div class="modal-mask modal-narrow" id="pgModalNew" data-page-node-id="R9oCXN8YrdhfM7YqriFymA">
+  <div class="modal" data-page-node-id="6sFgjXNUKZJDp1PCv5tHlo">
+    <div class="modal-header" data-page-node-id="4jvX6pXjQlK82S7a2DweLU"><div class="modal-title" data-page-node-id="7RbeBUQkY78AAvUNRSOlc1">新建页面</div><button class="modal-x" data-close-modal data-page-node-id="ClZ0PgYX15vpQaVunmLtgK">&times;</button></div>
+    <div class="modal-body" data-page-node-id="5kMb2iWY11AvlrOyb7C9Lb">
+      <div class="form-group" data-page-node-id="TDojtUFkT72vJVMZZqVpxv"><label class="form-label" data-page-node-id="A0QFRdSIsK4b4Zwb8S2rnU">页面 Key（URL 标识，字母/数字/-/_）</label><input class="form-input" id="pgNewKey" placeholder="如 my-project" data-page-node-id="PyqExTzeZsPmq0QjnALN4v"></div>
+      <div class="form-group" data-page-node-id="NKjrgsUjAAFvClFG1loump"><label class="form-label" data-page-node-id="1C7ktLStvIk5mUglY9oFH0">标题</label><input class="form-input" id="pgNewTitle" placeholder="如 My Project" data-page-node-id="NXjICSkOnW2HIN9kBvtCTv"></div>
+      <div class="form-grid" data-page-node-id="kGP5scgFv6ajjEa9EKRNQJ">
+        <div class="form-group" data-page-node-id="ELdBEr6GRpH1XGJEqLJE27"><label class="form-label" data-page-node-id="lTRWiAQzaNAIqefSJU1ysg">页面类型</label>
+          <select class="form-select" id="pgNewType" data-page-node-id="CgZGDfl6IkI8U110Ji81vt"><option value="detail" data-page-node-id="OsK2QHlcjjZzNpCPN8swOR">detail 案例详情</option><option value="home" data-page-node-id="pyAFGG0k5niJEqfWPMVd5j">home 首页</option><option value="list" data-page-node-id="Ew7EIPjelGE8HGXOZa1SjQ">list 列表</option><option value="about" data-page-node-id="C49a6DY2WbsZSG2w4mWkde">about 关于</option></select>
         </div>
-        <div class="form-group"><label class="form-label">层级 level</label>
-          <select class="form-select" id="pgNewLevel"><option value="1">1 一级页</option><option value="2">2 二级页</option><option value="3" selected>3 三级页</option></select>
+        <div class="form-group" data-page-node-id="PYRe2hhpdisnVsOgctRwrE"><label class="form-label" data-page-node-id="YlDqFudO7841Ix1LEArjA3">层级 level</label>
+          <select class="form-select" id="pgNewLevel" data-page-node-id="9Nin206rZFak1uCWzRiKCf"><option value="1" data-page-node-id="MktwTkywG1TZmhcV6sah7B">1 一级页</option><option value="2" data-page-node-id="RI2z2IuQfkH9dkJMKgNCJp">2 二级页</option><option value="3" selected data-page-node-id="KufbPxSHRO8wSwZLZMiQXC">3 三级页</option></select>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" data-close-modal>取消</button>
-      <button class="btn-primary" id="pgNewSubmit">创建</button>
+    <div class="modal-footer" data-page-node-id="X5D6b91FkxfgqE62dFFLWB">
+      <button class="btn-secondary" data-close-modal data-page-node-id="q7KDaPI5EjViA3CHR74Rpl">取消</button>
+      <button class="btn-primary" id="pgNewSubmit" data-page-node-id="okVQroO0RK49lDzojZLZS3">创建</button>
     </div>
   </div>
 </div>
 
 <!-- 页面管理：复制 Modal -->
-<div class="modal-mask modal-narrow" id="pgModalCopy">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">复制页面</div><button class="modal-x" data-close-modal>&times;</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label class="form-label">源页面</label><select class="form-select" id="pgCopyFrom"></select></div>
-      <div class="form-group"><label class="form-label">新页面 Key</label><input class="form-input" id="pgCopyKey" placeholder="如 my-project"></div>
-      <div class="form-group"><label class="form-label">新标题（留空继承源标题）</label><input class="form-input" id="pgCopyTitle" placeholder="新页面标题"></div>
-      <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">复制后将清空内容（content.json）与上传文件（uploads/），再从 0 编辑。</p>
+<div class="modal-mask modal-narrow" id="pgModalCopy" data-page-node-id="m4RS5r3LE7CBKczMi2PzDH">
+  <div class="modal" data-page-node-id="9Oe90Z3dv1UeyHDO1IDqFW">
+    <div class="modal-header" data-page-node-id="KoQZ3wcYvQ80V7DKdq9SnV"><div class="modal-title" data-page-node-id="maZU4qhxbDXbhc0lDXep1M">复制页面</div><button class="modal-x" data-close-modal data-page-node-id="bEqahZ98zX6cZEaHlFzn0X">&times;</button></div>
+    <div class="modal-body" data-page-node-id="eujdiaDC1Mn0ziCnb43P3O">
+      <div class="form-group" data-page-node-id="P1VRzEUl8USq8Y0fA3pLdn"><label class="form-label" data-page-node-id="AGXDty0dhAAJQs5V7qSyRr">源页面</label><select class="form-select" id="pgCopyFrom" data-page-node-id="co0D9tTzif3SXHEb6l8IoX"></select></div>
+      <div class="form-group" data-page-node-id="hmbJHqYLprinXnuvT5Q8HH"><label class="form-label" data-page-node-id="w7D0idynZIrYLGqdvcu7PL">新页面 Key</label><input class="form-input" id="pgCopyKey" placeholder="如 my-project" data-page-node-id="Oem3tTuTUje08erIruOKdt"></div>
+      <div class="form-group" data-page-node-id="PeEeDwGBfmELxUpdQavcGq"><label class="form-label" data-page-node-id="hj8OJbBlx6ZSHl3dkjPK8u">新标题（留空继承源标题）</label><input class="form-input" id="pgCopyTitle" placeholder="新页面标题" data-page-node-id="RTQjGKZoBqluO2FX4IF3Ei"></div>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.6;" data-page-node-id="Mhp2ARlzT3VqmoBEJxVoDu">复制后将清空内容（content.json）与上传文件（uploads/），再从 0 编辑。</p>
     </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" data-close-modal>取消</button>
-      <button class="btn-primary" id="pgCopySubmit">复制</button>
+    <div class="modal-footer" data-page-node-id="sALJvPBuHt5LPFi1jp4VDC">
+      <button class="btn-secondary" data-close-modal data-page-node-id="0jbxzmUTmGN4o0mlUEeo87">取消</button>
+      <button class="btn-primary" id="pgCopySubmit" data-page-node-id="Kgcf5OcYT1sWqO6Z5n8WpZ">复制</button>
     </div>
   </div>
 </div>
 
 <!-- 板块：复制到页面 Modal -->
-<div class="modal-mask modal-narrow" id="cpModal">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">复制板块到页面</div><button class="modal-x" data-close-modal>&times;</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label class="form-label">目标页面</label><select class="form-select" id="cpTarget"></select></div>
-      <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">复制会把板块数据连同其图片/视频文件一起拷贝到目标页（文件名自动重命名避免冲突）。带数据，目标页可直接显示。</p>
+<div class="modal-mask modal-narrow" id="cpModal" data-page-node-id="FTxijjVkjbaIv1yfP0txEd">
+  <div class="modal" data-page-node-id="wA3W5tf5QGnfVRVxJwvrGI">
+    <div class="modal-header" data-page-node-id="8BS9ev8vK7ev56ney6D8cF"><div class="modal-title" data-page-node-id="rGqnhmCk5p3DtRJtgzxd1m">复制板块到页面</div><button class="modal-x" data-close-modal data-page-node-id="Dvrv9vD0zGSirh8ubtC9PY">&times;</button></div>
+    <div class="modal-body" data-page-node-id="yvHhCWsj1WmBmnSAUsbQhP">
+      <div class="form-group" data-page-node-id="hnXEnRGRN0V6yrFdQMASm8"><label class="form-label" data-page-node-id="DYeGYifqauoaUumCXRINDz">目标页面</label><select class="form-select" id="cpTarget" data-page-node-id="jfyt57A5zTKPHnl8MViw2U"></select></div>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.6;" data-page-node-id="l0zA3e1FFTGXdhYcM0BNnF">复制会把板块数据连同其图片/视频文件一起拷贝到目标页（文件名自动重命名避免冲突）。带数据，目标页可直接显示。</p>
     </div>
-    <div class="modal-footer" style="justify-content:space-between;align-items:center;">
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--color-text-secondary);cursor:pointer;">
-        <input type="checkbox" id="cpMove" style="width:auto;height:auto;cursor:pointer;">
+    <div class="modal-footer" style="justify-content:space-between;align-items:center;" data-page-node-id="Pe6uNQqKJHH1rqoJyKxAKS">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--color-text-secondary);cursor:pointer;" data-page-node-id="bAxrTKjpgoejluqWl4cncU">
+        <input type="checkbox" id="cpMove" style="width:auto;height:auto;cursor:pointer;" data-page-node-id="FUQQzARgalTnvSA2r0GEtI">
         复制后从本页删除（相当于移动）
       </label>
-      <div style="display:flex;gap:10px;">
-        <button class="btn-secondary" data-close-modal>取消</button>
-        <button class="btn-primary" id="cpSubmit">确定</button>
+      <div style="display:flex;gap:10px;" data-page-node-id="XP8rCrSCSCKUTcTnBcFsc6">
+        <button class="btn-secondary" data-close-modal data-page-node-id="9qTskflVrVlDuoxbWCi5vv">取消</button>
+        <button class="btn-primary" id="cpSubmit" data-page-node-id="HEx6LCEGF5fAUmDhmYGxtT">确定</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- 页面管理：层级 Modal -->
-<div class="modal-mask modal-narrow" id="pgModalEdit">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">编辑页面层级</div><button class="modal-x" data-close-modal>&times;</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label class="form-label">标题</label><input class="form-input" id="pgEditTitle" placeholder="页面标题"></div>
-      <div class="form-grid">
-        <div class="form-group"><label class="form-label">父级页面</label><select class="form-select" id="pgEditParent"></select></div>
-        <div class="form-group"><label class="form-label">层级 level</label>
-          <select class="form-select" id="pgEditLevel"><option value="1">1 一级页</option><option value="2">2 二级页</option><option value="3">3 三级页</option></select>
+<div class="modal-mask modal-narrow" id="pgModalEdit" data-page-node-id="adFp8VsH0hVOF5Xah0vZ59">
+  <div class="modal" data-page-node-id="Z3SYvzfpXnIHDxVHdF6eJO">
+    <div class="modal-header" data-page-node-id="kb0Et49rpCSjfPreQ9VW76"><div class="modal-title" data-page-node-id="UdncHmjL9YuNROqs56DKew">编辑页面层级</div><button class="modal-x" data-close-modal data-page-node-id="jdL3k7sfE4jGmEUpBv61nZ">&times;</button></div>
+    <div class="modal-body" data-page-node-id="nwayHMirtZiehUZ04DvaET">
+      <div class="form-group" data-page-node-id="C8lYINo4NaPcKu6Usd3xxb"><label class="form-label" data-page-node-id="9FkZaT5NS2cPSsidiorDcF">标题</label><input class="form-input" id="pgEditTitle" placeholder="页面标题" data-page-node-id="A0VFmjTqZLfTcMTfoZpoKa"></div>
+      <div class="form-grid" data-page-node-id="LxY1EuCkQCTKodMpPaC8kI">
+        <div class="form-group" data-page-node-id="BgI3GK9EtkXgq0LD3jQvOA"><label class="form-label" data-page-node-id="FucDBErXhC3qwELyGEXdLq">父级页面</label><select class="form-select" id="pgEditParent" data-page-node-id="4pxObHzQZC8RSz3JHEZTAO"></select></div>
+        <div class="form-group" data-page-node-id="NdAQnEOzs1I8UJsB8WYaLO"><label class="form-label" data-page-node-id="TJG491ICGHroOxfgOOcw4J">层级 level</label>
+          <select class="form-select" id="pgEditLevel" data-page-node-id="ZNDFdW09uEReKwKksyQAD2"><option value="1" data-page-node-id="DhxVmnBivlZhhQzTBkh7eM">1 一级页</option><option value="2" data-page-node-id="EKoDSL4MBPRD1hZt4Vsib3">2 二级页</option><option value="3" data-page-node-id="ST6gdjtjquIxS4HQrE7PBM">3 三级页</option></select>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" data-close-modal>取消</button>
-      <button class="btn-primary" id="pgEditSubmit">保存</button>
+    <div class="modal-footer" data-page-node-id="UADjkbefOKpZTw6JHnHRqf">
+      <button class="btn-secondary" data-close-modal data-page-node-id="A872rltyXEcPCAGlYrs66H">取消</button>
+      <button class="btn-primary" id="pgEditSubmit" data-page-node-id="jkEVf21219uRpiVY5AYykp">保存</button>
     </div>
   </div>
 </div>
 
 <!-- 页面管理：删除 Modal -->
-<div class="modal-mask modal-narrow" id="pgModalDel">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">删除页面</div><button class="modal-x" data-close-modal>&times;</button></div>
-    <div class="modal-body"><p id="pgDelText" style="font-size:14px;color:var(--text-secondary);line-height:1.7;">删除后页面目录与内容、上传文件将一并移除，且不可恢复。</p></div>
-    <div class="modal-footer">
-      <button class="btn-secondary" data-close-modal>取消</button>
-      <button class="btn-danger" id="pgDelSubmit">确认删除</button>
+<div class="modal-mask modal-narrow" id="pgModalDel" data-page-node-id="v36WqJtS00yk2p7hm7Jg3y">
+  <div class="modal" data-page-node-id="fFE9NATqtnhSKa9sYitkvu">
+    <div class="modal-header" data-page-node-id="lgPSQb0qbaG8DsbLQM2KAQ"><div class="modal-title" data-page-node-id="EAtbH8dGAGqd2o6i3Qi4V3">删除页面</div><button class="modal-x" data-close-modal data-page-node-id="0u1BWHwnpNEZQlr1cfNhPI">&times;</button></div>
+    <div class="modal-body" data-page-node-id="Y62bZdzKW7LHBZeOHSiECX"><p id="pgDelText" style="font-size:14px;color:var(--text-secondary);line-height:1.7;" data-page-node-id="IYDEqEusVXuoyqdXpXtWsn">删除后页面目录与内容、上传文件将一并移除，且不可恢复。</p></div>
+    <div class="modal-footer" data-page-node-id="eEZNVSlGcAFyZJQ83DEDJr">
+      <button class="btn-secondary" data-close-modal data-page-node-id="y5Zi9UpgZawLxnGEF0cAx1">取消</button>
+      <button class="btn-danger" id="pgDelSubmit" data-page-node-id="2EfXSxMjOg7R7Jk6zbr0kg">确认删除</button>
     </div>
   </div>
 </div>
 
-<div class="workspace">
+<div class="workspace" data-page-node-id="c3M4G9ampPnbRu9DFDCD04">
   <!-- ===== Left Sidebar: 一级菜单（含可展开子菜单） + 板块二级导航 ===== -->
-  <aside class="sidebar-left">
-    <div class="side-menu" id="sideMenu">
+  <aside class="sidebar-left" data-page-node-id="NUlGcEbtjCpIQUPt5kh40c">
+    <div class="side-menu" id="sideMenu" data-page-node-id="h8czXdtt2ML1pGxpGfno58">
       <!-- 板块管理：一级菜单 + 展开子菜单（板块列表） -->
-      <div class="side-group" data-group="sections">
-        <button class="side-menu-item active" data-view="sections" title="编辑当前案例的板块内容（增删 / 排序 / 编辑）">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-          <span class="side-label">板块管理</span>
-          <svg class="side-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      <div class="side-group" data-group="sections" data-page-node-id="ge4KAqA3N9UYuSF87oA9ln">
+        <button class="side-menu-item active" data-view="sections" title="编辑当前案例的板块内容（增删 / 排序 / 编辑）" data-page-node-id="0Y4EOf90PSH0StNw2x1JKH">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="ykWBV7z1e4AFJpmj3Uj1pw"><rect x="3" y="3" width="18" height="18" rx="2" data-page-node-id="le8dFPXR9izoQQwwv5A3ir"/><line x1="9" y1="3" x2="9" y2="21" data-page-node-id="1zEln6yaAbbLyRGI5oQlqm"/><line x1="15" y1="3" x2="15" y2="21" data-page-node-id="cT0McB5Kya7Xe51rRFCa5P"/></svg>
+          <span class="side-label" data-page-node-id="jDY0SVSYAP3rrJBLDZHzLq">板块管理</span>
+          <svg class="side-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="S019VOlACQORE4YgIg3lDn"><polyline points="6 9 12 15 18 9" data-page-node-id="UZMk0wSMA2YAeVXldHTbqP"/></svg>
         </button>
-        <div class="side-sub" id="sideSubSections">
-          <div class="nav-menu" id="sidebarNav"></div>
+        <div class="side-sub" id="sideSubSections" data-page-node-id="EgZrODJGMK6uE4VIdXGOFU">
+          <div class="nav-menu" id="sidebarNav" data-page-node-id="fffWsOJah39XMzh0o3rPnD"></div>
         </div>
       </div>
-      <button class="side-menu-item" data-view="pages" title="页面管理（列表 / 新建 / 复制 / 层级 / 删除）">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <button class="side-menu-item" data-view="pages" title="页面管理（列表 / 新建 / 复制 / 层级 / 删除）" data-page-node-id="EmFJ8FUvOV5O4Ffojn1Avv">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="yuJhC07zZFMeR6Suf4e8FQ"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" data-page-node-id="eDuU8rymkKtioP5DCeMNyA"/><polyline points="14 2 14 8 20 8" data-page-node-id="HCVSb5R0H1E95F0yO0OwZw"/><line x1="16" y1="13" x2="8" y2="13" data-page-node-id="EfNZTXZzxWWXBHoEs3ZxNP"/><line x1="16" y1="17" x2="8" y2="17" data-page-node-id="SE5PRqcNjdQBdxUyK0niRA"/></svg>
         页面管理
       </button>
-      <button class="side-menu-item" data-view="letsTalk" title="编辑网页底部 Let's talk 联系区块（文案 + 四张二维码）">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg>
+      <button class="side-menu-item" data-view="letsTalk" title="编辑网页底部 Let's talk 联系区块（文案 + 四张二维码）" data-page-node-id="wuqN9M8hAl0gETY3PDaQLF">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="BQ4EQuyiGh6DvD0XLupIiB"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" data-page-node-id="5x7jA4vhOv0KA6FUFb5vJ4"/><path d="M8 9h8" data-page-node-id="guoy8R7bBhFpoovWL6mb95"/><path d="M8 13h5" data-page-node-id="ELJJrBUGUrv7qBrw3Dd5dg"/></svg>
         底部导航
       </button>
-      <button class="side-menu-item" data-view="navMenu" title="编辑前台顶部导航菜单（名称 / 链接页面 / 是否新窗口）">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <button class="side-menu-item" data-view="navMenu" title="编辑前台顶部导航菜单（名称 / 链接页面 / 是否新窗口）" data-page-node-id="tT05P6dDEuoaH8qlGy43zI">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="GmtLo7tHuZVwHesPzzhe9b"><line x1="3" y1="12" x2="21" y2="12" data-page-node-id="zLqakArYYfHdEEkKHcIEwQ"/><line x1="3" y1="6" x2="21" y2="6" data-page-node-id="3ZyAIjgxLrsAoICTHsXSzH"/><line x1="3" y1="18" x2="21" y2="18" data-page-node-id="GFXLosQGvGgyqhiYECncvr"/></svg>
         顶部导航
       </button>
     </div>
-    <div class="sidebar-footer">
-      <div class="sf-copy">© 2026 W.</div>
+    <div class="sidebar-footer" data-page-node-id="pJoydVfWg1pxcjhjJ0CIHE">
+      <div class="sf-copy" data-page-node-id="94BjECFOanRSk9bH5mvRjF">© 2026 W.</div>
     </div>
   </aside>
 
   <!-- ===== Middle + Right Columns ===== -->
-  <div class="main-cols">
+  <div class="main-cols" data-page-node-id="ZLRNTU5VrkNgnVDiBvmggZ">
 
     <!-- ===== Middle: Cards Grid ===== -->
-    <div class="left-work" id="leftWork">
-      <div class="page-header">
-        <div class="page-title" title="拖拽排序 · 增删板块 · 左侧点击 / 卡片点击进入编辑">板块管理</div>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-left:auto;">
-          <select class="page-switcher" title="切换编辑页面（有未保存修改时会先确认）"></select>
-          <span style="font-size:13px; color:var(--text-muted);">共 <b id="sectionCount" style="color:var(--text-primary);">0</b> 个板块</span>
-          <span class="save-status" id="saveStatus"><span class="spinner"></span><span class="save-text"></span></span>
-          <button class="btn-primary" id="btnSave" title="保存当前案例的板块、Let's talk 与顶部导航修改 (Ctrl+S)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    <div class="left-work" id="leftWork" data-page-node-id="stAGcCPVCutHMUlBiqr7yZ">
+      <div class="page-header" data-page-node-id="Wba06jiJJHxYaK0HAp1LBw">
+        <div class="page-title" title="拖拽排序 · 增删板块 · 左侧点击 / 卡片点击进入编辑" data-page-node-id="pXQwc0meHwrqfSABd9e0Lr">板块管理</div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-left:auto;" data-page-node-id="1kJZGHxb4Ayqswq0rkfltP">
+          <select class="page-switcher" title="切换编辑页面（有未保存修改时会先确认）" data-page-node-id="gvS8knlTNEcYAU4t2pBzCj"></select>
+          <span style="font-size:13px; color:var(--text-muted);" data-page-node-id="dWgqFmzrWbByCAmoM07rOs">共 <b id="sectionCount" style="color:var(--text-primary);" data-page-node-id="9yzXYR5KM6ILGB1gY8CQ75">0</b> 个板块</span>
+          <span class="save-status" id="saveStatus" data-page-node-id="9tG7PVQ2rEMcSUppneulCY"><span class="spinner" data-page-node-id="gMuw99mUVWiOc4yvWVUrKe"></span><span class="save-text" data-page-node-id="oCxnhx5oYuCG8ySKXHas7r"></span></span>
+          <button class="btn-primary" id="btnSave" title="保存当前案例的板块、Let's talk 与顶部导航修改 (Ctrl+S)" data-page-node-id="O5Aif3BOCcfdNx0Xfp6QSd">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;" data-page-node-id="LWTecrqBVdbm0qkiWhG97G"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" data-page-node-id="gvpDH8e0wgh8X5qCFOlD6z"/><polyline points="17 21 17 13 7 13 7 21" data-page-node-id="lDYHpHlgWmacK1aO3XeWBf"/><polyline points="7 3 7 8 15 8" data-page-node-id="8L5IOLiaryATwBpidSJlXi"/></svg>
             保存
           </button>
         </div>
       </div>
 
-      <div class="panel" style="margin-bottom:0;">
-        <div class="panel-body" style="padding:16px 20px 20px;">
-          <div class="cards-grid" id="cardsGrid"></div>
-          <div id="cardsEmpty" class="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-            <div>还没有板块，点击「+ 添加板块」开始构建案例</div>
+      <div class="panel" style="margin-bottom:0;" data-page-node-id="ItQobKiGuNg03jze2ocsSe">
+        <div class="panel-body" style="padding:16px 20px 20px;" data-page-node-id="DbdT343tQnFT1emoC8MykC">
+          <div class="cards-grid" id="cardsGrid" data-page-node-id="tjsHVAyDKwFfuDptuSuC4v"></div>
+          <div id="cardsEmpty" class="empty-state" data-page-node-id="ZN21r6GvwNHq2k5LdexESK">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="XdlHWAPjlrdypG8VX5GNCq"><rect x="3" y="3" width="18" height="18" rx="2" data-page-node-id="A2OfUQL5PS1wUYkC86E4Fb"/><line x1="9" y1="3" x2="9" y2="21" data-page-node-id="J6Y4tUXNKW6OeDkJYqjFMA"/><line x1="15" y1="3" x2="15" y2="21" data-page-node-id="Tgx2eP4ZVEONSfZpHbJJrN"/></svg>
+            <div data-page-node-id="AqiHzFe6zFckFFjvGjiG5C">还没有板块，点击「+ 添加板块」开始构建案例</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 未选定页面时：就地新建页面表单（区别于弹窗，提供在「板块管理」直接新建的路径） -->
+      <div id="createPageInline" style="display:none;">
+        <div class="panel" style="margin-bottom:0;">
+          <div class="panel-body" style="padding:24px 28px;">
+            <div class="cip-head">
+              <div class="cip-title">新建页面</div>
+              <div class="cip-sub">当前还没有选定要编辑的页面，先在这里创建一个新页面，创建后会自动进入板块编辑。</div>
+            </div>
+            <div class="cip-form">
+              <div class="cip-grid">
+                <div class="form-group">
+                  <label class="form-label">页面 Key（URL 标识，字母/数字/-/_）</label>
+                  <input class="form-input" id="cipKey" placeholder="如 my-project">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">标题</label>
+                  <input class="form-input" id="cipTitle" placeholder="如 My Project">
+                </div>
+              </div>
+              <div class="cip-grid">
+                <div class="form-group">
+                  <label class="form-label">页面类型</label>
+                  <select class="form-select" id="cipType">
+                    <option value="detail">detail 案例详情</option>
+                    <option value="home">home 首页</option>
+                    <option value="list">list 列表</option>
+                    <option value="about">about 关于</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">层级 level</label>
+                  <select class="form-select" id="cipLevel">
+                    <option value="1">1 一级页</option>
+                    <option value="2">2 二级页</option>
+                    <option value="3" selected>3 三级页</option>
+                  </select>
+                </div>
+              </div>
+              <div class="cip-actions">
+                <button class="btn-accent" id="cipSubmit">创建并进入编辑</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- ===== Right: Section Editor ===== -->
-    <div class="right-work" id="rightWork">
+    <div class="right-work" id="rightWork" data-page-node-id="xtIfqfvReRaCw6pyrkIOJQ">
       <!-- Content injected by JS -->
     </div>
 
     <!-- ===== 页面管理视图（右侧区域，随左侧一级菜单切换） ===== -->
-    <div class="pages-view" id="pagesView" style="display:none;">
-      <div class="pages-topbar">
-        <div style="display:flex; align-items:center; gap:18px; min-width:0;">
-          <div>
-            <div class="page-title">页面管理</div>
-            <div class="page-subtitle">基于板块组装体系的页面索引 · 新建 / 复制 / 层级 / 删除，点「内容」进入该页面板块编辑</div>
+    <div class="pages-view" id="pagesView" style="display:none;" data-page-node-id="kWZIRXXYjGHsZLXDm8QtEj">
+      <div class="pages-topbar" data-page-node-id="21X9SH2Bfx6WHX55dAggzf">
+        <div style="display:flex; align-items:center; gap:18px; min-width:0;" data-page-node-id="60BQwPAOJBGo8pIhUQE3iP">
+          <div data-page-node-id="t9JjPgJNn2xztPYjZjiy2Y">
+            <div class="page-title" data-page-node-id="tB2KDVBPIv8q1X8YJzHcl0">页面管理</div>
+            <div class="page-subtitle" data-page-node-id="AdzzKh5K5eOGC5a84oDLGH">基于板块组装体系的页面索引 · 新建 / 复制 / 层级 / 删除，点「内容」进入该页面板块编辑</div>
           </div>
-          <div class="theme-switch" id="themeSwitch" title="全站主题切换（仅前台组件与页面背景变色；顶部导航与底部 footer 不参与）">
-            <button type="button" class="theme-btn" data-theme="light">浅色</button>
-            <button type="button" class="theme-btn" data-theme="dark">深色</button>
+          <div class="theme-switch" id="themeSwitch" title="全站主题切换（仅前台组件与页面背景变色；顶部导航与底部 footer 不参与）" data-page-node-id="9XkZT9U5HXscF0NDpb8utY">
+            <button type="button" class="theme-btn" data-theme="light" data-page-node-id="obH0nYEGmw5CV3gi5crXBX">浅色</button>
+            <button type="button" class="theme-btn" data-theme="dark" data-page-node-id="FpAi5D3XMVJFghZhcAUHXW">深色</button>
           </div>
         </div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn-accent" id="btnPgNew">＋ 新建页面</button>
-          <button class="btn-accent" id="btnPgCopy" style="background:var(--text-secondary);border-color:var(--text-secondary);">复制为…</button>
+        <div style="display:flex; gap:10px;" data-page-node-id="Ea631qFBDGROUwWrb6f1PR">
+          <button class="btn-accent" id="btnPgNew" data-page-node-id="XMboX8GqRSwTROGlWeYsvw">＋ 新建页面</button>
+          <button class="btn-accent" id="btnPgCopy" style="background:var(--text-secondary);border-color:var(--text-secondary);" data-page-node-id="C0fc38UMejAYSH03DEjgz5">复制为…</button>
         </div>
       </div>
-      <div class="pages-list-card">
-        <div id="pagesList" class="pages-empty">加载中…</div>
+      <div class="pages-list-card" data-page-node-id="cknaaHUn7K0gCe9K6zRpuj">
+        <div id="pagesList" class="pages-empty" data-page-node-id="p66wcsdtw1Mcv0ULlR4GY3">加载中…</div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ===== Delete Confirm Modal (ONLY modal) ===== -->
-<div class="modal-mask modal-narrow" id="confirmModal">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">确认操作</div></div>
-    <div class="modal-body"><div id="confirmText" style="font-size:14px; line-height:1.7;"></div></div>
-    <div class="modal-footer">
-      <div class="modal-footer-right">
-        <button class="btn-secondary" onclick="closeModal('confirmModal')">取消</button>
-        <button class="btn-danger" id="btnConfirm">删除</button>
+<div class="modal-mask modal-narrow" id="confirmModal" data-page-node-id="LN3DLg4y24d3jMNfEtOlHh">
+  <div class="modal" data-page-node-id="mcFcHzHNJadDfSw4rWobKA">
+    <div class="modal-header" data-page-node-id="gLuBhlJUD37yrwbfFwGJIA"><div class="modal-title" data-page-node-id="99V1zHE4GSRO4Dz2IConut">确认操作</div></div>
+    <div class="modal-body" data-page-node-id="kAMoj9d39wn0G1tE5vS27m"><div id="confirmText" style="font-size:14px; line-height:1.7;" data-page-node-id="I0vnJ7pFz0de9wReME0YEg"></div></div>
+    <div class="modal-footer" data-page-node-id="nB6vMwqT1obHj8pNKGNlK8">
+      <div class="modal-footer-right" data-page-node-id="WhTA4nHMwXm1gPMiO8GoLU">
+        <button class="btn-secondary" onclick="closeModal('confirmModal')" data-page-node-id="3Z3kkVjyhBv3Rpnh1BcGnt">取消</button>
+        <button class="btn-danger" id="btnConfirm" data-page-node-id="mbGy9iCWW3br5B7JVqtriB">删除</button>
       </div>
     </div>
   </div>
 </div>
 
-<div class="toast-wrap" id="toastWrap"></div>
+<div class="toast-wrap" id="toastWrap" data-page-node-id="9iTclW3k6mUYjADGSzhCGn"></div>
 
 <!-- ===== Switch Page Confirm Modal（有未保存修改时切换页面） ===== -->
-<div class="modal-mask modal-narrow" id="switchModal">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">未保存的修改</div></div>
-    <div class="modal-body"><div id="switchText" style="font-size:14px; line-height:1.7;"></div></div>
-    <div class="modal-footer">
-      <div class="modal-footer-right">
-        <button class="btn-secondary" onclick="closeModal('switchModal')">取消</button>
-        <button class="btn-secondary" id="btnSwitchDiscard">不保存切换</button>
-        <button class="btn-primary" id="btnSwitchSave">保存并切换</button>
+<div class="modal-mask modal-narrow" id="switchModal" data-page-node-id="57p58RegxYedK34ihIzOFG">
+  <div class="modal" data-page-node-id="um7hHXFwNLyygD7HqgUzBo">
+    <div class="modal-header" data-page-node-id="EEldKFgxZa1vk4VGV5tzSE"><div class="modal-title" data-page-node-id="hoH3rcBnQj71K7Lbnk0r1k">未保存的修改</div></div>
+    <div class="modal-body" data-page-node-id="Q62UOJfDBhPD9kVySjBi1p"><div id="switchText" style="font-size:14px; line-height:1.7;" data-page-node-id="tClZH1nDkzFs9HyE02gYB7"></div></div>
+    <div class="modal-footer" data-page-node-id="OSPTPzaeyXBpG5abfmZETl">
+      <div class="modal-footer-right" data-page-node-id="ZCg8LfMHQfAvzTCC3tgwZY">
+        <button class="btn-secondary" onclick="closeModal('switchModal')" data-page-node-id="hOK2HPqUT5Gu4HFaHkXWDA">取消</button>
+        <button class="btn-secondary" id="btnSwitchDiscard" data-page-node-id="2c63HUhgcXO3pvSxmdgBa1">不保存切换</button>
+        <button class="btn-primary" id="btnSwitchSave" data-page-node-id="bWffqSPbxA6PIqf0SsFYHc">保存并切换</button>
       </div>
     </div>
   </div>
@@ -2962,7 +2884,11 @@ const TYPE_FIELDS = {
       optionLabels: { 'theme': '主题渐变（默认深色）', 'color': '纯色', 'image': '背景图', 'video': '背景视频' }, default: 'theme' },
     { key: 'bgColor', label: '背景色', type: 'text', placeholder: '#0c0d10', tab: '背景',
       dependsOn: { field: 'bgType', value: 'color' } },
+    // ⚠️ 必须带 compress（声明式，2026-08-31 约定）：mockup-banner 不在 uploadImage 的
+    //    upSecType 三元链里（flat 字段仅 showcase/hero-banner/double-image），缺了会静默
+    //    落进默认 2560 桶，与 server.py:1446「mockup-banner → 1680px 宽」的声明不符。
     { key: 'bgImage', label: '背景大图（铺满相框，建议 16:9 横图）', type: 'image', tab: '背景',
+      compress: { mode: 'maxSide', side: 1680 },
       dependsOn: { field: 'bgType', value: 'image' } },
     { key: 'bgVideo', label: '背景视频（铺满相框，自动循环）', type: 'video', tab: '背景',
       hint: '上传 mp4/webm 或填直链；自动静音循环播放，离屏自动暂停', dependsOn: { field: 'bgType', value: 'video' } },
@@ -3158,53 +3084,53 @@ function getDefaultSection(type) {
   const base = { id: genId(), type };
   switch(type) {
     case 'hero': return { ...base, videoUrl: '', videoType: 'video' };
-    case 'hero-banner': return { ...base, textLayout: 'left', title: 'Premium Digital Agency for Startups, SaaS & Brands', labels: [ { text: '50+ employees' }, { text: '6 countries' }, { text: 'Founded in 2010' } ], description: 'We craft digital experiences that help ambitious companies grow and stand out in a crowded market.', videoType: 'image', image: '', videoUrl: '', effect: 'slide', autoplayDelay: '4000', images: [] };
+    case 'hero-banner': return { ...base, textLayout: 'left', title: '为创业公司与品牌打造的数字体验', labels: [ { text: '50+ 团队成员' }, { text: '6 个国家与地区' }, { text: '成立于 2010 年' } ], description: '我们为有雄心的企业打造数字体验，帮助他们在拥挤的市场中脱颖而出、持续增长。', videoType: 'image', image: '', videoUrl: '', effect: 'slide', autoplayDelay: '4000', images: [] };
     case 'swipe-slider': return { ...base, videoType: 'slides', slides: [
-      { image: '', title: 'Scroll down', subtitle: '一屏一屏滑动浏览，滚轮 / 触摸 / 拖拽皆可' },
-      { image: '', title: 'Swipe to explore', subtitle: '标题逐字上翻动画，到尾可退出衔接下方内容' }
+      { image: '', title: '向下滚动', subtitle: '一屏一屏滑动浏览，滚轮 / 触摸 / 拖拽皆可' },
+      { image: '', title: '滑动探索', subtitle: '标题逐字上翻动画，到尾可退出衔接下方内容' }
     ], animatedSlides: [
-      { animatedEffect: 'iridescence', animatedParams: {}, title: 'Scroll down', subtitle: '一屏一屏滑动浏览，滚轮 / 触摸 / 拖拽皆可' },
-      { animatedEffect: 'molten', animatedParams: {}, title: 'Swipe to explore', subtitle: '每屏独立动画背景，逐屏切换' }
+      { animatedEffect: 'iridescence', animatedParams: {}, title: '向下滚动', subtitle: '一屏一屏滑动浏览，滚轮 / 触摸 / 拖拽皆可' },
+      { animatedEffect: 'molten', animatedParams: {}, title: '滑动探索', subtitle: '每屏独立动画背景，逐屏切换' }
     ] };
     case 'fullscreen-slider': return { ...base, videoType: 'slides', autoplayDelay: '', slides: [
-      { image: '', title: 'Full screen', subtitle: '页面锁定，滚轮 / 触摸 / 方向键逐屏切换，右侧圆点指示第几张' },
-      { image: '', title: 'Swipe to explore', subtitle: '标题逐字上翻动画，到尾不循环' }
+      { image: '', title: '全屏展示', subtitle: '页面锁定，滚轮 / 触摸 / 方向键逐屏切换，右侧圆点指示第几张' },
+      { image: '', title: '滑动探索', subtitle: '标题逐字上翻动画，到尾不循环' }
     ], animatedSlides: [
-      { animatedEffect: 'iridescence', animatedParams: { mouseInteraction: false }, title: 'Full screen', subtitle: '页面锁定，滚轮 / 触摸 / 方向键逐屏切换' },
-      { animatedEffect: 'molten', animatedParams: { mouseInteraction: false }, title: 'Swipe to explore', subtitle: '每屏独立动画背景，逐屏切换' }
+      { animatedEffect: 'iridescence', animatedParams: { mouseInteraction: false }, title: '全屏展示', subtitle: '页面锁定，滚轮 / 触摸 / 方向键逐屏切换' },
+      { animatedEffect: 'molten', animatedParams: { mouseInteraction: false }, title: '滑动探索', subtitle: '每屏独立动画背景，逐屏切换' }
     ] };
-    case 'intro': return { ...base, label: '', heading: '', year: '2025', industry: '', scopeTags: [], timeline: '' };
+    case 'intro': return { ...base, label: '项目介绍', heading: '关于这个项目的背景、目标与我们的工作方式。', year: '2025', industry: '', scopeTags: [], timeline: '' };
     case 'brand-logo': return { ...base, logoUrl: '' };
     case 'parallax': return { ...base, videoType: 'image', baseImage: '', overlayImage: '' };
-    case 'text': return { ...base, label: '', heading: '', body: '', linkPage: '', linkUrl: '', linkText: '' };
-    case 'showcase': return { ...base, label: '', desc: '', image: '', videoUrl: '', videoType: 'image' };
-    case 'gallery': return { ...base, label: '', heading: '', colCount: '3', columns: [
+    case 'text': return { ...base, label: '关于本项目', heading: '用一句话概括这一板块要表达的核心内容。', body: '在这里填写正文，介绍项目的背景、设计思路、实现细节或你的角色与贡献。', linkPage: '', linkUrl: '', linkText: '' };
+    case 'showcase': return { ...base, label: '项目亮点', desc: '简要说明这一展示区所呈现的内容与价值。', image: '', videoUrl: '', videoType: 'image' };
+    case 'gallery': return { ...base, label: '截图墙', heading: '产品界面与关键页面一览', colCount: '3', columns: [
       { offsetRem: 0, images: [] }, { offsetRem: 0, images: [] }, { offsetRem: 0, images: [] }
     ] };
-    case 'masonry': return { ...base, label: '', heading: '', items: [] };
+    case 'masonry': return { ...base, label: '作品集', heading: '精选案例与设计探索', items: [] };
     case 'single-image': return { ...base, videoType: 'image', image: '' };
     case 'double-image': return { ...base, image1: '', image2: '' };
-    case 'testimonial': return { ...base, title: '', avatarInitials: '', name: '', role: '', quote: '' };
-    case 'title': return { ...base, title: 'Projects', copyright: '2010-26©', description: "We've helped businesses across industries achieve their goals. Here are some of our recent projects.", size: '148', padding: '标准' };
+    case 'testimonial': return { ...base, title: '客户评价', avatarInitials: '客', name: '客户姓名', role: '职位 / 公司', quote: '在这里填写客户对项目或合作的真实评价，一两个句子即可，突出成果与体验。' };
+    case 'title': return { ...base, title: '精选项目', copyright: '2010-26©', description: '我们帮助各行各业的客户实现目标，以下是我们近期的一些代表项目。', size: '148', padding: '标准' };
     case 'next-projects': return { ...base, groups: [{ cards: [] }] };
-    case 'clients': return { ...base, label: 'Our clients', heading: '', logosPerRow: '', logoStyle: 'grayscale', logos: [] };
-    case 'stats': return { ...base, label: 'Why choose us', heading: 'We design for results – helping your business meet its goals.', subtitle: 'Easy-to-use interfaces, seamless development, and lasting impressions keep your users coming back.', videoUrl: '', videoType: 'video', mediaRatio: 'landscape', items: [
-      { value: '600', suffix: '+', title: 'Successful projects completed', desc: "We've helped launch over 600 digital products and experiences that make brands stand out and feel human." },
-      { value: '100', suffix: '%', title: 'UpWork rating', desc: 'Consistently rated 100% job success and top-rated talent.' }
+    case 'clients': return { ...base, label: '我们的客户', heading: '', logosPerRow: '', logoStyle: 'grayscale', logos: [] };
+    case 'stats': return { ...base, label: '为什么选择我们', heading: '我们为结果而设计，帮助你的业务达成目标。', subtitle: '易用的界面、顺畅的开发与持久的印象，让你的用户持续回流。', videoUrl: '', videoType: 'video', mediaRatio: 'landscape', items: [
+      { value: '600', suffix: '+', title: '成功交付的项目', desc: '我们已帮助客户上线超过 600 个数字产品与体验，让品牌脱颖而出、更具人情味。' },
+      { value: '100', suffix: '%', title: '客户好评率', desc: '始终保持 100% 项目成功率与优质人才好评。' }
     ] };
-    case 'services': return { ...base, label: 'What we do', heading: 'Services', items: [
-      { num: '001', title: 'Web & App Design', desc: 'Modern, responsive, and user-friendly websites and apps designed to engage users and drive conversions.', categories: ['Web & App UI', 'iOS & Android', 'Cross-Platform Design', 'Animations & Microinteractions', 'Prototyping & User Flows', 'Design Systems & UI Kits'] },
-      { num: '002', title: 'Development', desc: 'We offer full-stack development for websites and web apps, including architecture, performance optimization, QA, and ongoing support.', categories: ['Website Development', 'Web App Development', 'Frontend', 'Backend', 'iOS & Android Development', 'QA & Testing', 'Maintenance & Support'] },
-      { num: '003', title: 'Branding', desc: 'Distinctive, memorable brand experiences that communicate your values and create emotional connections with your customers.', categories: ['Offline Branding', 'Logo design', 'Rebranding', 'Typography', 'Guidelines', 'Visual identity', 'Digital brand presence', 'Color systems'] },
-      { num: '004', title: '3D', desc: 'We create high-quality 3D animations and visuals for websites, apps, and videos – adding depth, motion, and a polished edge to your product.', categories: ['3D Animation', '3D Rendering', '3D Assets', 'Video & Motion Use'] }
+    case 'services': return { ...base, label: '我们能做什么', heading: '服务内容', items: [
+      { num: '001', title: '网站与 App 设计', desc: '现代、响应式、易用的网站与应用，旨在吸引用户并驱动转化。', categories: ['网站与 App UI', 'iOS 与 Android', '跨平台设计', '动画与微交互', '原型与用户流程', '设计系统与 UI 套件'] },
+      { num: '002', title: '开发', desc: '提供网站与 Web 应用的全栈开发，涵盖架构、性能优化、测试与长期维护。', categories: ['网站开发', 'Web 应用开发', '前端', '后端', 'iOS 与 Android 开发', '测试与质量保障', '维护与支持'] },
+      { num: '003', title: '品牌设计', desc: '独特、难忘的品牌体验，传递你的价值并建立与客户的情感连接。', categories: ['线下品牌', 'Logo 设计', '品牌重塑', '字体设计', '品牌规范', '视觉识别', '数字化品牌形象', '配色系统'] },
+      { num: '004', title: '3D', desc: '为网站、应用与视频打造高质量的 3D 动画与视觉，为产品增添深度、动感与精致质感。', categories: ['3D 动画', '3D 渲染', '3D 资产', '视频与动态应用'] }
     ] };
-    case 'team': return { ...base, label: 'Join our mission', heading: 'Our team,', subheading: 'your vision', desc1: "If you're ready to create and collaborate, we'd love to hear from you.", desc2: 'We thrive on teamwork, turning individual strengths into shared success. Together, we turn ideas into digital products that solve real problems for real people.', buttonText: 'Apply now', items: [] };
+    case 'team': return { ...base, label: '加入我们的旅程', heading: '我们的团队，', subheading: '你的愿景', desc1: '如果你准备好一起创造、一起协作，我们很乐意听听你的想法。', desc2: '我们在协作中成长，把每个人的优势凝聚成共同的成果。我们一起把想法变成真正解决问题的数字产品。', buttonText: '加入我们', items: [] };
     case 'mockup-banner': return { ...base, phones: [
       { ui: '', startRx: '22', startRy: '-22', startTy: '480', endRx: '8', endRy: '-22', endTy: '0', z: '0' },
       { ui: '', startRx: '22', startRy: '22', startTy: '480', endRx: '8', endRy: '22', endTy: '-30', z: '40' }
     ],
       spins: '1', dur: '4200', abGap: '48', replayInterval: '', phoneAnim: '1', shellColor: 'black', bgType: 'theme', bgColor: '#0c0d10', bgImage: '', bgVideo: '', bgOverlay: '',
-      title: '', subtitle: '', titleZ: 'behind', titleAlign: 'left', titleVAlign: 'center',
+      title: '让产品立体起来', subtitle: '以真实 3D 样机呈现你的设计作品', titleZ: 'behind', titleAlign: 'left', titleVAlign: 'center',
       titleFont: 'default', titleSize: '64', titleWeight: '600', titleLineHeight: '1.1',
       titleLetterSpacing: 'normal', titleColor: '', titleUppercase: '', titleNoWrap: '', titleFull: '',
       subtitleSize: '28', subtitleWeight: '400', subtitleColor: '', subtitleLetterSpacing: 'normal',
@@ -3219,10 +3145,14 @@ function getDefaultSection(type) {
       heading: "MEET YOUR SKIN'S\nNEW ESSENTIAL", desc: 'MINU Hydrating Sunscreen Minerals. Real protection. Real feel.',
       font: 'limelight', titleTracking: '-0.045', subtitleTracking: '-0.005', subtitleSize: '11',
       fitWidth: '112', fitHeight: '100', cardColor: '', inkColor: '' };
-    case 'icon-wall': return { ...base, heading: '', subheading: '', scatterMode: 'vogel', scatterJitter: '0.15', scatterMinR: '14', scatterMaxR: '40', scatterPad: '12', frame: false, float: true, icons: [] };
+    case 'icon-wall': return { ...base, heading: '图标动画墙', subheading: '以动态图标散落铺满整屏，营造灵动的品牌氛围。', scatterMode: 'vogel', scatterJitter: '0.15', scatterMinR: '14', scatterMaxR: '40', scatterPad: '12', frame: false, float: true, icons: [] };
     case 'device-screen': return { ...base, deviceImage: '', mediaType: 'image', media: '', videoUrl: '', objectFit: 'cover',
       corners: [{ x: 12, y: 12 }, { x: 88, y: 12 }, { x: 88, y: 76 }, { x: 12, y: 76 }],
-      heading: '', subheading: '', bgType: 'theme', bgColor: '#0c0d10' };
+      heading: '设备屏幕展示', subheading: '将设计稿贴合嵌入设备屏幕，呈现真实的使用场景。', bgType: 'theme', bgColor: '#0c0d10' };
+    case 'eyebrow-head': return { ...base, eyebrow: '导语标签', title: '用一句话点明本板块的核心主题', subtitle: '补充说明文字，交代背景或价值。' };
+    case 'split-head': return { ...base, num: '01', en: 'Overview', title: '分栏标题', aside: '这里是右侧的分栏描述文字，可简要概括本板块的内容。' };
+    case 'product-hero': return { ...base, badge: '全新发布', title: '产品名称与核心卖点', desc: '一句话介绍这个产品的价值与亮点，让访客快速了解它能带来什么。', stats: [], products: [] };
+    case 'scene-grid': return { ...base, eyebrow: '场景标签', title: '场景网格标题', subtitle: '简要说明这些场景或使用情境。', cards: [] };
     default: return base;
   }
 }
@@ -3512,10 +3442,9 @@ function renderSidebar() {
     empty.textContent = '暂无板块，点击下方「添加板块」开始';
     nav.appendChild(empty);
   }
-  // Ensure max 22 rows scroll behavior
-  if (state.sections.length > 22) {
-    nav.style.maxHeight = 'calc(100vh - 220px)';
-  }
+  // 板块列表滚动由 .side-sub.open 的 max-height 统一管控，不要再写 inline maxHeight。
+  // 否则 inline 会覆盖 .side-sub .nav-menu 的 max-height:none，板块数锐减后仍残留限制导致多余滚动条。
+  nav.style.removeProperty('max-height');
   // 一级菜单高亮与当前视图同步（由 showView 主导，这里兜底保持一致）
   document.querySelectorAll('#sideMenu .side-menu-item').forEach((b) => {
     b.classList.toggle('active', b.dataset.view === currentView);
@@ -3549,23 +3478,24 @@ function renderSectionList() {
 
     const label = TYPE_LABELS[s.type] || s.type;
     const thumbHtml = buildCardThumbnail(s);
-    const previewText = buildCardPreviewText(s);
 
     el.innerHTML = `
       <div class="card-head">
         <div class="card-head-left">
-          <span class="card-type-badge">${esc(label)}</span>
-          <span class="card-order">#${String(i + 1).padStart(2, '0')}</span>
+          <span class="card-order-badge">#${String(i + 1).padStart(2, '0')}</span>
+          <div class="card-head-titles">
+            <div class="card-title" title="${esc(label)}">${esc(label)}</div>
+            <div class="card-slug" title="${esc(s.type)}">${esc(s.type)}</div>
+          </div>
         </div>
+      </div>
+      <div class="card-thumb-area">
+        <div class="card-thumb-box">${thumbHtml}</div>
         <div class="card-actions">
           <button class="btn-icon" title="编辑" data-act="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
           <button class="btn-icon" title="复制到页面" data-act="more"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
           <button class="btn-icon delete" title="删除" data-act="delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
-      </div>
-      <div class="card-thumb-area">${thumbHtml}</div>
-      <div class="card-body">
-        <div class="card-preview ${previewText ? '' : 'empty'}">${previewText ? esc(previewText) : '（无内容预览）'}</div>
       </div>`;
 
     // Click card → select & open editor
@@ -3617,218 +3547,211 @@ function renderSectionList() {
 
 function buildCardThumbnail(s) {
   try {
+    // —— 线框缩略图原语（skeleton primitives）——
+    var bar = function (cls, w) { return '<span class="wf-bar ' + (cls || '') + '"' + (w ? ' style="width:' + w + '"' : '') + '></span>'; };
+    var media = function (cls) { return '<div class="wf-media ' + (cls || '') + '"></div>'; };
+    var W = function (inner, cls) { return '<div class="wf ' + (cls || '') + '">' + inner + '</div>'; };
+    var n = function (a) { return Array.isArray(a) ? a.length : 0; };
+
     switch (s.type) {
-      case 'hero': {
-        const media = s.videoType === 'video' ? '视频' : (s.videoType === 'carousel' ? '轮播图' : (s.videoType === 'image' ? '图片' : '占位符'));
-        const count = (s.videoType === 'carousel' && Array.isArray(s.images)) ? s.images.filter(x => x && x.image).length : 0;
-        return `<div class="ct-hero">
-          <div class="hero-play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg></div>
-          <div class="hero-title-overlay">媒体：${esc(media)}${count ? ' · ' + count + '张' : ''}</div>
-        </div>`;
-      }
-      case 'hero-banner': {
-        const carouselImg = (s.videoType === 'carousel' && Array.isArray(s.images)) ? (s.images.find(x => x && x.image) || {}).image : '';
-        const bg = s.videoType === 'carousel' ? carouselImg : s.image;
-        return `<div class="ct-hero"${bg ? ` style="background-image:url('${esc(bg)}');background-size:cover;background-position:center;"` : ''}>
-          <div class="hero-play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="16" rx="2.5"/><polygon points="10 8.5 16 12 10 15.5 10 8.5"/></svg></div>
-          <div class="hero-title-overlay">${esc(s.title || 'Hero Banner')}${s.videoType === 'carousel' ? ' · 轮播' : ''}</div>
-        </div>`;
-      }
-      case 'swipe-slider': {
-        const arr = Array.isArray(s.slides) ? s.slides : [];
-        const first = arr.find(x => x && x.image) || {};
-        const bg = first.image || '';
-        const title = (arr[0] && arr[0].title) || (arr.length + ' 屏');
-        return `<div class="ct-hero"${bg ? ` style="background-image:url('${esc(bg)}');background-size:cover;background-position:center;"` : ''}>
-          <div class="hero-play-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 7.5 6.5 10 9 12.5"/><polyline points="15 16.5 17.5 14 15 11.5"/><line x1="6.5" y1="10" x2="17.5" y2="10"/><line x1="17.5" y1="14" x2="6.5" y2="14"/></svg></div>
-          <div class="hero-title-overlay">${esc(title)}${arr.length ? ' · ' + arr.length + '屏' : ''}</div>
-        </div>`;
-      }
-      case 'fullscreen-slider': {
-        const arr = Array.isArray(s.slides) ? s.slides : [];
-        const first = arr.find(x => x && x.image) || {};
-        const bg = first.image || '';
-        const title = (arr[0] && arr[0].title) || (arr.length + ' 屏');
-        return `<div class="ct-hero"${bg ? ` style="background-image:url('${esc(bg)}');background-size:cover;background-position:center;"` : ''}>
-          <div class="hero-play-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 7.5 6.5 10 9 12.5"/><polyline points="15 16.5 17.5 14 15 11.5"/><line x1="6.5" y1="10" x2="17.5" y2="10"/><line x1="17.5" y1="14" x2="6.5" y2="14"/><circle cx="20.5" cy="4.5" r="1.6" fill="currentColor"/></svg></div>
-          <div class="hero-title-overlay">${esc(title)}${arr.length ? ' · ' + arr.length + '屏' : ''}</div>
-        </div>`;
-      }
-      case 'intro': {
-        const year = s.year || '—';
-        const industry = s.industry || '';
-        const heading = s.heading || s.label || '';
-        return `<div class="ct-intro">
-          <span class="meta-chip">Year ${esc(year)}${industry ? ' · ' + esc(industry) : ''}</span>
-          <div class="intro-heading">${esc(heading || '（未设置标题）')}</div>
-        </div>`;
-      }
-      case 'title': {
-        const heading = s.title || '（未设置标题）';
-        const info = [(s.copyright || ''), (s.description || '')].filter(Boolean).join(' · ');
-        return `<div class="ct-text">
-          <div class="text-heading">${esc(heading)}</div>
-          <div class="text-body">${esc(info || '内容描述预览...')}</div>
-        </div>`;
-      }
-      case 'parallax': {
-        if (s.overlayImage || s.baseImage) {
-          return `<div class="ct-parallax">
-            <div class="base-layer" style="background-image:url('${esc(s.baseImage || '')}');"></div>
-            <div class="overlay-layer" style="background-image:url('${esc(s.overlayImage || s.baseImage || '')}');"></div>
-          </div>`;
-        }
-        return `<div class="ct-parallax"><div class="parallax-empty">底层 + 叠加图（未上传）</div></div>`;
-      }
-      case 'text': {
-        const heading = s.heading || s.label || '（未设置标题）';
-        const body = s.body || '';
-        return `<div class="ct-text">
-          <div class="text-heading">${esc(heading)}</div>
-          <div class="text-body">${esc(body || '正文内容预览...')}</div>
-        </div>`;
-      }
-      case 'showcase': {
-        const label = s.label || '';
-        const desc = s.desc || '';
-        const img = s.image || '';
-        return `<div class="ct-showcase">
-          <div class="sc-image" style="background-image:url('${esc(img)}');"></div>
-          <div class="sc-info">
-            ${label ? `<span class="sc-label">${esc(label)}</span>` : ''}
-            <div class="sc-desc">${esc(desc || '（未设置描述）')}</div>
-          </div>
-        </div>`;
-      }
+      // —— 媒体主导 ——
+      case 'hero':
+        return '<div class="wf f0">' + media('fill') + '<div class="wf-play"></div></div>';
+
+      case 'hero-banner':
+        return '<div class="wf f0">' + media('fill') +
+          '<div class="wf-ovl-bottom">' + bar('t w55', '55%') + bar('w35', '35%') + '</div></div>';
+
+      case 'swipe-slider':
+      case 'fullscreen-slider':
+        return '<div class="wf f0">' + media('fill') + '<div class="wf-play"></div>' +
+          '<div class="wf-dots"><span class="wf-dot"></span><span class="wf-dot o"></span><span class="wf-dot o"></span></div></div>';
+
+      case 'single-image':
+        return '<div class="wf f0">' + media('fill') + '</div>';
+
+      case 'double-image':
+        return '<div class="wf f0"><div class="wf-row" style="height:100%">' +
+          '<div class="wf-media" style="flex:1"></div><div class="wf-media" style="flex:1"></div></div></div>';
+
+      case 'showcase':
+        return W('<div class="wf-row" style="flex:1;gap:10px">' +
+          '<div class="wf-media" style="flex:1.4"></div>' +
+          '<div style="flex:1;display:flex;flex-direction:column;gap:6px">' +
+          '<span class="wf-chip" style="width:70px"></span>' + bar('w90', '90%') + bar('w70', '70%') + bar('s w50', '50%') +
+          '</div></div>');
+
       case 'gallery': {
-        const screens = Array.isArray(s.screens) ? s.screens : [];
-        const first = screens[0] || '';
-        return `<div class="ct-gallery" style="background-image:url('${esc(first)}');"></div>`;
+        var gc = Math.max(1, Math.min(6, n(s.screens) || 4));
+        var gcols = gc <= 2 ? 2 : (gc <= 4 ? 2 : 3);
+        var gcells = '';
+        for (var gi = 0; gi < gc; gi++) gcells += media('');
+        return '<div class="wf f0" style="padding:8px"><div class="wf-grid" style="grid-template-columns:repeat(' + gcols + ',1fr);grid-auto-rows:1fr;gap:6px;height:100%">' + gcells + '</div></div>';
       }
-      case 'single-image': {
-        return `<div class="ct-single-image" style="background-image:url('${esc(s.image || '')}');"></div>`;
-      }
-      case 'double-image': {
-        return `<div class="ct-double-image">
-          <div class="di-half" style="background-image:url('${esc(s.image1 || '')}');"></div>
-          <div class="di-half" style="background-image:url('${esc(s.image2 || '')}');"></div>
-        </div>`;
-      }
-      case 'testimonial': {
-        const initials = s.avatarInitials || (s.name ? s.name.slice(0, 2).toUpperCase() : '??');
-        const name = s.name || '（未设置姓名）';
-        const role = s.role || '';
-        const quote = s.quote || '';
-        return `<div class="ct-testimonial">
-          <div class="tm-avatar">${esc(initials)}</div>
-          <div class="tm-content">
-            <div class="tm-name">${esc(name)}</div>
-            ${role ? `<div class="tm-role">${esc(role)}</div>` : ''}
-            <div class="tm-quote">${esc(quote || '客户引言内容...')}</div>
-          </div>
-        </div>`;
-      }
-      case 'brand-logo': {
-        const imgUrl = s.logoUrl || '';
-        if (imgUrl) {
-          return `<div class="ct-single">
-            <div class="ct-single-img" style="background-image:url('${esc(imgUrl)}');background-size:contain;"></div>
-          </div>`;
-        }
-        return `<div style="display:flex;align-items:center;justify-content:center;height:100%;background:linear-gradient(180deg,#F5F5F7,#EDEEF1);color:#8E8E93;font-size:12px;font-weight:500;letter-spacing:0.2px;">
-          <span style="padding:0 12px;text-align:center;line-height:1.5;">项目Logo栏目<br/><span style="font-weight:400;font-size:11px;color:#98989D;">（管理后台上传 Logo）</span></span>
-        </div>`;
-      }
-      case 'title': text = s.title ? s.title : '（未设置标题）'; break;
-    case 'next-projects': {
-        const groups = (Array.isArray(s.groups) && s.groups.length)
-          ? s.groups
-          : [{ cards: Array.isArray(s.cards) ? s.cards : [] }];
-        const cards = (groups[0] && Array.isArray(groups[0].cards)) ? groups[0].cards : [];
-        const np1 = cards[0] || { name: '项目 A', image1: '' };
-        const np2 = cards[1] || { name: '项目 B', image1: '' };
-        return `<div class="ct-next-projects">
-          <div class="np-mini" style="background-image:url('${esc(np1.image1 || '')}');">
-            <div class="np-overlay"><span>${esc(np1.name || '项目1')}</span></div>
-          </div>
-          <div class="np-mini" style="background-image:url('${esc(np2.image1 || '')}');">
-            <div class="np-overlay"><span>${esc(np2.name || '项目2')}</span></div>
-          </div>
-        </div>`;
-      }
+
+      case 'masonry':
+        return '<div class="wf f0" style="padding:8px"><div class="wf-grid" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:6px;height:100%">' +
+          '<div class="wf-media" style="grid-row:span 2"></div>' + media('') + media('') + '</div></div>';
+
+      case 'intro':
+        return W('<span class="wf-chip" style="width:96px"></span>' +
+          bar('t w70', '70%') + bar('t w50', '50%') + bar('w90', '90%') + bar('w80', '80%'));
+
+      case 'brand-logo':
+        return W('<div class="wf-media" style="width:52%;height:42%;margin:auto;border-radius:9px"></div>', 'wf-center');
+
+      case 'parallax':
+        return '<div class="wf f0">' + media('fill') +
+          '<div class="wf-media" style="position:absolute;left:16%;top:16%;right:16%;bottom:16%;border-radius:9px;box-shadow:0 6px 16px rgba(0,0,0,.12)"></div></div>';
+
+      case 'text':
+        return W('<div style="border-left:2px solid var(--accent-color);padding-left:8px;display:flex;flex-direction:column;gap:6px">' +
+          bar('t w60', '60%') + bar('w90', '90%') + bar('w80', '80%') + bar('s w70', '70%') + '</div>');
+
+      case 'testimonial':
+        return W('<div class="wf-row" style="align-items:flex-start;gap:10px">' +
+          '<div class="wf-avatar" style="width:34px;height:34px"></div>' +
+          '<div style="flex:1;display:flex;flex-direction:column;gap:6px">' +
+          bar('t w40', '40%') + bar('s w25', '25%') + bar('w90', '90%') + bar('s w70', '70%') + '</div></div>');
+
+      case 'title':
+        return W(bar('t w50', '50%') + bar('s w30', '30%') + bar('s w40', '40%'), 'wf-center');
+
+      case 'next-projects':
+        return '<div class="wf f0"><div class="wf-row" style="height:100%">' +
+          '<div class="wf-media" style="flex:1;position:relative"><div class="wf-ovl-bottom">' + bar('s w55', '55%') + '</div></div>' +
+          '<div class="wf-media" style="flex:1;position:relative"><div class="wf-ovl-bottom">' + bar('s w55', '55%') + '</div></div>' +
+          '</div></div>';
+
       case 'clients': {
-        const logos = Array.isArray(s.logos) ? s.logos : [];
-        return `<div class="ct-clients">
-          <span class="ct-clients-title">${esc(s.label || 'Our clients')}</span>
-          <div class="ct-clients-logos">${logos.slice(0, 5).map((l) => l && l.image
-            ? `<div class="ct-logo-mini" style="background-image:url('${esc(l.image)}');"></div>`
-            : `<div class="ct-logo-mini ct-logo-text">${esc((l && l.name) || 'L')}</div>`).join('') || '<span class="ct-muted">（未添加 Logo）</span>'}</div>
-        </div>`;
+        var logos = '';
+        for (var ci = 0; ci < 5; ci++) logos += '<div class="wf-media" style="width:40px;height:20px;flex:none;border-radius:4px"></div>';
+        return W(bar('s w30', '30%') + '<div class="wf-row" style="flex-wrap:wrap;gap:6px">' + logos + '</div>');
       }
+
       case 'stats': {
-        const items = Array.isArray(s.items) ? s.items : [];
-        return `<div class="ct-stats">
-          <div class="ct-stats-title">${esc(s.label || 'Why choose us')}</div>
-          <div class="ct-stats-grid">${items.slice(0, 3).map((it) => `<div class="ct-stat"><b>${esc((it && it.value) || '0')}${esc((it && it.suffix) || '')}</b><span>${esc((it && it.label) || '')}</span></div>`).join('') || '<span class="ct-muted">（未添加统计项）</span>'}</div>
-        </div>`;
+        // 真实 stats 区块两类模式（render.js renderStats 1848 + components.css）：
+        //  · 横图 is-landscape：媒体在右侧 5:3，数据卡在左侧单列上下堆叠 → 顶标题+副标题，下左卡右媒体
+        //  · 竖图（默认）：媒体在左侧 4:5，数据卡在右侧并排（2 列），标题位于媒体右侧卡上方
+        // 数据卡 = .stat-item 大圆角白卡，value 大数字 + title + desc；卡数 = items.length
+        var sc = Math.max(1, Math.min(6, n(s.items) || 2));
+        var card = '<div class="wf-stat"><span class="wf-stat-value"></span>' +
+          '<span class="wf-bar t" style="width:70%"></span>' +
+          '<span class="wf-bar s" style="width:55%"></span></div>';
+        var cards = '';
+        for (var si = 0; si < sc; si++) cards += card;
+        var hasMedia = !!(s.videoUrl || s.videoType === 'animated');
+        // 横场：mediaRatio==='landscape' 或（缺省且为视频）→ 媒体右侧 5:3
+        var landscape = hasMedia && (s.mediaRatio ? (s.mediaRatio === 'landscape') : (s.videoType === 'video'));
+        if (hasMedia && landscape) {
+          // 图1 横图：左（标题 + 副标题 + 数据卡单列上下堆叠）+ 右（大媒体块 5:3）
+          return W('<div class="wf-row" style="flex:1;gap:10px">' +
+            '<div style="flex:1;display:flex;flex-direction:column;gap:6px;justify-content:flex-start;min-width:0">' +
+              bar('t w80', '80%') + bar('s w60', '60%') +
+              '<div class="wf-grid" style="grid-template-columns:1fr;grid-auto-rows:1fr;gap:6px;flex:1;margin-top:4px">' + cards + '</div>' +
+            '</div>' +
+            '<div class="wf-media" style="flex:1.25;border-radius:9px;align-self:stretch"></div>' +
+          '</div>');
+        }
+        if (hasMedia) {
+          // 图3 竖图：左（竖媒体块 4:5）+ 右（eyebrow + 大标题 + 副标题 + 数据卡并排 2 列）
+          return W('<div class="wf-row" style="flex:1;gap:10px">' +
+            '<div class="wf-media" style="flex:1;border-radius:9px;align-self:stretch"></div>' +
+            '<div style="flex:1.35;display:flex;flex-direction:column;gap:6px;justify-content:flex-start;min-width:0">' +
+              bar('s w35', '35%') + bar('t w85', '85%') + bar('s w60', '60%') +
+              '<div class="wf-grid" style="grid-template-columns:repeat(2,1fr);grid-auto-rows:1fr;gap:6px;flex:1;margin-top:4px">' + cards + '</div>' +
+            '</div>' +
+          '</div>');
+        }
+        // 无媒体：顶部三段文字，下方 2 列卡网格
+        return W(bar('s w30', '30%') + bar('t w70', '70%') + bar('s w55', '55%') +
+          '<div class="wf-grid" style="grid-template-columns:repeat(2,1fr);grid-auto-rows:1fr;gap:7px;flex:1">' + cards + '</div>');
       }
+
       case 'services': {
-        const items = Array.isArray(s.items) ? s.items : [];
-        return `<div class="ct-services">
-          <div class="ct-services-title">${esc(s.heading || 'Services')}</div>
-          ${items.slice(0, 4).map((it) => `<div class="ct-service-row"><span class="ct-service-num">${esc((it && it.num) || '')}</span><span>${esc((it && it.title) || '')}</span></div>`).join('') || '<span class="ct-muted">（未添加服务项）</span>'}
-        </div>`;
+        var sv = Math.max(1, Math.min(4, n(s.items) || 4));
+        var srows = '';
+        for (var vi = 0; vi < sv; vi++) srows += '<div class="wf-row" style="gap:7px"><span class="wf-chip" style="width:18px;height:14px;border-radius:4px"></span>' + bar('w70', '70%') + '</div>';
+        return W(bar('s w30', '30%') + srows);
       }
+
       case 'team': {
-        const items = Array.isArray(s.items) ? s.items : [];
-        return `<div class="ct-team">
-          <div class="ct-team-title">${esc(s.label || 'Our team')}</div>
-          <div class="ct-team-grid">${items.slice(0, 4).map((it) => `<div class="ct-member">${it && it.photo
-            ? `<div class="ct-member-photo" style="background-image:url('${esc(it.photo)}');"></div>`
-            : `<div class="ct-member-photo ct-member-empty">${esc((it && it.name && it.name[0]) || '?')}</div>`}<span>${esc((it && it.name) || '')}</span></div>`).join('') || '<span class="ct-muted">（未添加成员）</span>'}</div>
-        </div>`;
+        // 真实 team 区块 = 左文字（标题2行 + 两列描述/按钮） 右 2×2 竖图头像拼图（.team-grid, repeat(2,1fr), 4:5）
+        var tgrid = '';
+        for (var ti = 0; ti < 4; ti++) tgrid += '<div class="wf-media" style="flex:none;aspect-ratio:4/5;border-radius:5px"></div>';
+        return W('<div class="wf-row" style="flex:1;gap:12px">' +
+          '<div style="flex:1.1;display:flex;flex-direction:column;gap:6px;justify-content:center">' +
+            bar('t w85', '85%') + bar('t w60', '60%') +
+            '<div class="wf-row" style="gap:8px;margin-top:2px">' +
+              '<div style="flex:1;display:flex;flex-direction:column;gap:4px">' + bar('s w60', '60%') + bar('s w90', '90%') + bar('s w75', '75%') + '</div>' +
+              '<div style="flex:1;display:flex;flex-direction:column;gap:4px">' + bar('s w90', '90%') + bar('s w70', '70%') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-grid" style="flex:1;grid-template-columns:repeat(2,1fr);grid-auto-rows:1fr;gap:5px">' + tgrid + '</div>' +
+        '</div>');
       }
+
       case 'eyebrow-head':
-        return `<div style="padding:8px 10px;text-align:center;">
-          ${s.eyebrow ? '<span class="pd-eyebrow">' + esc(s.eyebrow) + '</span><br>' : ''}
-          <b style="font-size:14px;">${esc(s.title || '（未设置标题）')}</b>
-          ${s.subtitle ? '<br><span style="font-size:12px;opacity:.6;">' + esc(s.subtitle) + '</span>' : ''}
-        </div>`;
+        return W('<span class="wf-chip" style="width:54px"></span>' + bar('t w55', '55%') + bar('s w40', '40%'), 'wf-center');
+
       case 'split-head':
-        return `<div style="padding:8px 10px;">
-          <div style="font-size:12px;opacity:.6;">${esc((s.num ? s.num + ' · ' : '') + (s.en || ''))}</div>
-          <b style="font-size:14px;">${esc(s.title || '（未设置标题）')}</b>
-          ${s.aside ? '<br><span style="font-size:12px;opacity:.6;">' + esc(s.aside) + '</span>' : ''}
-        </div>`;
-      case 'product-hero': {
-        const products = Array.isArray(s.products) ? s.products : [];
-        return `<div style="padding:8px 10px;">
-          <b style="font-size:14px;">${esc(s.title || '（未设置主标题）')}</b>
-          <div style="font-size:12px;opacity:.6;margin-top:4px;">产品卡 ${products.length} 张 · 指标 ${Array.isArray(s.stats) ? s.stats.length : 0} 项</div>
-        </div>`;
-      }
+        return W('<div class="wf-row" style="gap:10px;flex:1">' +
+          '<div style="flex:1;display:flex;flex-direction:column;gap:6px">' + bar('s w40', '40%') + bar('t w70', '70%') + '</div>' +
+          '<div style="flex:1;display:flex;flex-direction:column;gap:6px">' + bar('w90', '90%') + bar('s w80', '80%') + '</div></div>');
+
+      case 'product-hero':
+        return W('<div class="wf-row" style="flex:1;gap:10px">' +
+          '<div style="flex:1;display:flex;flex-direction:column;gap:7px;justify-content:center">' + bar('t w80', '80%') + bar('w90', '90%') + bar('s w60', '60%') + '</div>' +
+          '<div class="wf-media" style="flex:1.1"></div></div>');
+
       case 'scene-grid': {
-        const cards = Array.isArray(s.cards) ? s.cards : [];
-        return `<div style="padding:8px 10px;">
-          <b style="font-size:14px;">${esc(s.title || '（未设置标题）')}</b>
-          <div style="font-size:12px;opacity:.6;margin-top:4px;">场景卡 ${cards.length} 张</div>
-        </div>`;
+        // 真实 scene-grid = 顶部居中头（eyebrow+title+sub） + grid-body 垂直多行，每行 3 张 scene-card
+        // render.js: for (r=0; r<cards.length; r+=3) 一行 3 个；用户示意 2 行共 6 个
+        var rowsHtml = '';
+        for (var rowIdx = 0; rowIdx < 2; rowIdx++) {
+          var row = '';
+          for (var ci = 0; ci < 3; ci++) row += '<div class="wf-scene-card">' +
+            '<div class="wf-scene-card-head"><span class="wf-bar t" style="width:24%"></span><span class="wf-bar s" style="width:30%"></span></div>' +
+            '<div class="wf-scene-card-body">' + bar('s w85', '85%') + bar('s w60', '60%') + '</div>' +
+          '</div>';
+          rowsHtml += '<div class="wf-grid" style="grid-template-columns:repeat(3,1fr);gap:6px;flex:1">' + row + '</div>';
+        }
+        return W(bar('s w30', '30%') + bar('t w50', '50%') + bar('s w45', '45%') + rowsHtml);
       }
-      case 'mockup-banner': {
-        const n = (Array.isArray(s.phones) ? s.phones.length : 0);
-        const posLabel = { left: '视窗居左', center: '视窗居中', right: '视窗居右' }[s.stagePos] || '视窗居右';
-        return `<div style="padding:8px 10px;">
-          <b style="font-size:14px;">${esc(s.title || '（未设置标题）')}</b>
-          <div style="font-size:12px;opacity:.6;margin-top:4px;">手机 ×${n} · 转 ${esc(s.spins || '1')} 圈 · ${esc(posLabel)}</div>
-        </div>`;
+
+      case 'mockup-banner':
+        return '<div class="wf f0">' + media('fill') +
+          '<div class="wf-frame" style="inset:22% 30%;border-radius:10px"></div>' +
+          '<div class="wf-ovl-bottom" style="align-items:center;text-align:center">' + bar('t w45', '45%') + '</div></div>';
+
+      case 'ad-banner':
+        return W('<div class="wf-media" style="flex:1;position:relative">' +
+          '<div class="wf-split"></div>' +
+          '<div style="position:absolute;top:9px;left:10px;right:10px;display:flex;flex-direction:column;gap:5px">' + bar('t w50', '50%') + '</div>' +
+          '<div style="position:absolute;bottom:9px;left:10px;right:10px;display:flex;flex-direction:column;gap:5px">' + bar('s w40', '40%') + '</div></div>');
+
+      case 'text-fill-banner':
+        return W('<div class="wf-media" style="flex:1.3;border-radius:9px"></div>' +
+          '<div style="display:flex;flex-direction:column;gap:6px">' + bar('t w55', '55%') + bar('s w42', '42%') + '</div>');
+
+      case 'icon-wall': {
+        var pos = [[12,20],[70,14],[40,44],[20,66],[78,58],[55,80],[33,30]];
+        var icons = '';
+        for (var ii = 0; ii < pos.length; ii++) icons += '<div class="wf-icon" style="left:' + pos[ii][0] + '%;top:' + pos[ii][1] + '%"></div>';
+        return '<div class="wf f0">' + icons + '<div class="wf-ovl-bottom" style="align-items:center;text-align:center">' + bar('t w40', '40%') + '</div></div>';
       }
+
+      case 'device-screen':
+        return '<div class="wf f0"><div class="wf-frame" style="inset:15px;border-radius:13px"></div></div>';
+
       default:
-        return `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:12px;">（未知类型）</div>`;
+        return W('<span class="wf-muted" style="margin:auto">未支持预览</span>', 'wf-center');
     }
   } catch (e) {
-    return `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:12px;">预览失败</div>`;
+    return '<div class="wf wf-empty"><span class="wf-muted">预览失败</span></div>';
   }
 }
+
 
 function buildCardPreviewText(s) {
   let text = '';
@@ -3912,10 +3835,11 @@ function renderRightPanel() {
       const tile = document.createElement('button');
       tile.className = 'type-picker-tile';
       tile.type = 'button';
+      // 用组件真实骨架缩略图（getDefaultSection 提供默认数据量），去掉描述，保留名称 + type-key
+      const sample = getDefaultSection(t);
       tile.innerHTML = `
-        <div class="tp-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${TYPE_ICONS[t] || TYPE_ICONS['text']}</svg></div>
+        <div class="tp-thumb"><div class="tp-thumb-box">${buildCardThumbnail(sample)}</div></div>
         <div class="tp-name">${esc(TYPE_LABELS[t])}</div>
-        <div class="tp-desc">${esc(TYPE_DESCS[t] || '')}</div>
         <div class="tp-key">${esc(t)}</div>`;
       tile.onclick = () => addSectionOfType(t);
       grid.appendChild(tile);
@@ -4052,13 +3976,27 @@ function renderEditorForm(section) {
       '<div class="mbvis-launch-s">拖拽 4 角对准样机屏幕；手挡住一角时开启「平行四边形锁定」自动推算，媒体实时透视预览，关闭即保存</div></div>' +
       '<button type="button" class="mbvis-launch-btn" id="dsvisLaunchBtn">打开屏幕校准</button></div></div>';
   }
-  fields.forEach((f) => {
+    fields.forEach((f) => {
     if (hasTabs) openPanel(f.tab || tabs[0], tabs.indexOf(f.tab || tabs[0]));
     const isFull = ['textarea', 'image', 'image-list', 'video', 'cards-list', 'groups-list', 'gallery-columns', 'intro-rows', 'items-list', 'displacement-picker', 'animated-params'].includes(f.type);
-    html += `<div class="form-group${isFull ? ' full' : ''}">`;
-    html += `<label class="form-label">${esc(f.label)}${f.hint ? `<span class="field-hint" tabindex="0" title="" aria-label="${esc(f.hint)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="hint-bubble">${esc(f.hint)}</span></span>` : ''}${(f.type === 'select' && f.default !== undefined) ? `<button type="button" class="field-reset" data-reset-key="${esc(f.key)}" data-reset-default="${esc(f.default)}" title="重置此项" aria-label="重置此项"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>` : ''}</label>`;
+    // checkbox 整行宽（开关 + 文字描述横排，宽度小就不好看）
+    const isCheckbox = f.type === 'checkbox';
     const val = section[f.key];
     const fieldUid = 'f_' + f.key + '_' + section.id;
+    html += `<div class="form-group${isFull ? ' full' : ''}${isCheckbox ? ' field-checkbox' : ''}">`;
+    // checkbox：渲染为 iOS 风格开关 + 文字行内（替换原本的方框 <input> 样式，与其他字段视觉一致）；保留 hint
+    if (isCheckbox) {
+      const checked = (val === true || val === 'true') ? ' checked' : '';
+      html += `<label class="checkbox-switch" for="${fieldUid}">` +
+        `<input type="checkbox" data-bind-key="${esc(f.key)}" data-bind-ftype="checkbox" id="${fieldUid}"${checked}>` +
+        `<span class="switch-track"><span class="switch-thumb"></span></span>` +
+        `<span class="switch-text">${esc(f.label)}</span>` +
+        (f.hint ? `<span class="field-hint" tabindex="0" title="" aria-label="${esc(f.hint)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="hint-bubble">${esc(f.hint)}</span></span>` : '') +
+        `</label>`;
+      html += `</div>`;
+      return;
+    }
+    html += `<label class="form-label">${esc(f.label)}${f.hint ? `<span class="field-hint" tabindex="0" title="" aria-label="${esc(f.hint)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="hint-bubble">${esc(f.hint)}</span></span>` : ''}${(f.type === 'select' && f.default !== undefined) ? `<button type="button" class="field-reset" data-reset-key="${esc(f.key)}" data-reset-default="${esc(f.default)}" title="重置此项" aria-label="重置此项"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>` : ''}</label>`;
     switch (f.type) {
       case 'text':
         html += `<input class="form-input" data-bind-key="${esc(f.key)}" data-bind-ftype="text" type="text" value="${esc(val || '')}" id="${fieldUid}">`;
@@ -4228,6 +4166,12 @@ function renderEditorForm(section) {
         }
       } else if (ftype === 'tags') {
         state.sections[selectedIndex][k] = inp.value.split(',').map((s) => s.trim()).filter(Boolean);
+      } else if (ftype === 'checkbox') {
+        // 开关：直接存布尔（前端面板 / 缩略图 / 字段 hint 全部按 true/false 读）
+        state.sections[selectedIndex][k] = !!inp.checked;
+        // 视觉同步：取消勾选时让开关回到 track 左侧
+        const sw = inp.parentElement && inp.parentElement.querySelector('.switch-track');
+        if (sw) sw.classList.toggle('on', inp.checked);
       } else {
         state.sections[selectedIndex][k] = inp.value;
       }
@@ -7560,6 +7504,21 @@ function deleteSection(index) {
   openModal('confirmModal');
 }
 
+/* ===== 保存按钮可用性（未选定页面时禁用，防止误覆盖已有页面） ===== */
+function syncSaveButtonState() {
+  const btn = $('#btnSave');
+  if (!btn) return;
+  // 无 CASE_KEY 即禁用：此时没有页面可写入，板块编辑视图下保存会 throw；页面管理视图下同样禁用更一致。
+  // 避免「未选定页面却挂着已有页面标签 / 可点保存」的误导。
+  const disabled = !CASE_KEY;
+  btn.disabled = disabled;
+  btn.title = disabled
+    ? '请先在「页面管理」选择或新建页面，再保存内容'
+    : '保存当前案例的板块、Let\'s talk 与顶部导航修改 (Ctrl+S)';
+  btn.style.opacity = disabled ? '0.5' : '';
+  btn.style.cursor = disabled ? 'not-allowed' : '';
+}
+
 async function saveAll() {
   setSaving(true, '保存中...');
   try {
@@ -7621,6 +7580,7 @@ function renderAll() {
 
 /* ===== Wire Up ===== */
 $('#btnSave').onclick = saveAll;
+$('#cipSubmit').onclick = submitCreatePageInline;
 $('#btnConfirm').onclick = () => {
   closeModal('confirmModal');
   if (confirmAction) { confirmAction(); confirmAction = null; }
@@ -7647,6 +7607,20 @@ function syncSectionArea() {
   if (currentView !== 'sections') return;
   const lw = $('#leftWork');
   const rw = $('#rightWork');
+  const cip = $('#createPageInline');
+  // 卡片区所在 panel（cardsGrid/cardsEmpty 的父容器，即 leftWork 内第一个 .panel）
+  const cardsPanel = lw ? lw.querySelector('.panel') : null;
+  // 未选定页面：在中间区域就地显示「新建页面」表单，隐藏卡片区与右侧编辑器
+  if (!CASE_KEY) {
+    if (cip) cip.style.display = '';
+    if (cardsPanel) cardsPanel.style.display = 'none';
+    lw.style.display = '';
+    rw.style.display = 'none';
+    return;
+  }
+  // 已选定页面：隐藏新建表单，恢复正常的板块卡片 / 编辑器双栏
+  if (cip) cip.style.display = 'none';
+  if (cardsPanel) cardsPanel.style.display = '';
   const showMid = state.sections.length > 0;
   lw.style.display = showMid ? '' : 'none';
   rw.style.display = '';
@@ -7716,6 +7690,7 @@ function showView(view) {
   }
   syncSectionArea();
   renderRightPanel();
+  syncSaveButtonState();  // 按当前 CASE_KEY 刷新保存按钮（未选定页面则禁用）
 }
 
 /* ===== 全局 API（页面索引 / 新建 / 复制 / 层级 / 删除，带登录 token） ===== */
@@ -7750,10 +7725,29 @@ async function apiGlobal(path, method, body) {
 const PG_TYPE_LABEL = { detail: '案例详情', home: '首页', list: '列表', about: '关于' };
 let currentHomeKey = 'home';   // 当前全站首页 key（来自 /api/pages 的 homeKey 字段）
 
+// 把 updatedAt（ISO 'YYYY-MM-DDTHH:MM:SS'，本地时间）格式化为友好的「最后修改」文案
+function fmtUpdated(iso) {
+  if (!iso) return '';
+  const s = String(iso);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (!m) return s;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]));
+  const now = new Date();
+  const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  const startOfDay = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const dayDiff = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
+  if (dayDiff === 0) return '今天 ' + hm;
+  if (dayDiff === 1) return '昨天 ' + hm;
+  const md = (Number(m[2])) + '-' + (Number(m[3]));
+  if (d.getFullYear() === now.getFullYear()) return md + ' ' + hm;
+  return m[1] + '-' + m[2] + '-' + m[3];
+}
+
 function pageRowHtml(p) {
   const isCurrent = p.key === CASE_KEY;
   const isHome = !!(p.isHome || p.key === currentHomeKey);
   const btnStyle = 'height:30px;padding:0 12px;font-size:12px;';
+  const updated = fmtUpdated(p.updatedAt);
   return '<div class="pages-row">' +
     '<div class="pages-info">' +
       '<div class="pt">' + esc(p.title || p.key) + ' <span class="pages-badge lv' + esc(p.level || 3) + '">L' + esc(p.level || 3) + '</span>' +
@@ -7762,6 +7756,7 @@ function pageRowHtml(p) {
       '<div class="pk">' + esc(p.key) + ' · ' + esc(PG_TYPE_LABEL[p.type] || p.type || 'detail') +
         (p.parent ? ' · 父级: ' + esc(p.parent) : ' · 顶级') + '</div>' +
     '</div>' +
+    (updated ? '<div class="pages-updated" title="最后修改：' + esc(p.updatedAt) + '">' + esc(updated) + '</div>' : '') +
     '<div class="pages-ops">' +
       '<a class="btn-secondary" style="' + btnStyle + '" href="../' + esc(p.key) + '/index.html" target="_blank" rel="noopener">前台</a>' +
       '<button class="btn-secondary" style="' + btnStyle + '" data-pg-edit="' + esc(p.key) + '">层级</button>' +
@@ -7832,6 +7827,7 @@ async function switchCase(key, title) {
   await loadState();
   showView('sections');
   loadPageSwitcher();
+  syncSaveButtonState();  // 已选定页面 → 启用保存按钮
   toast('已切换到：' + (title || key), 'success');
 }
 
@@ -7865,10 +7861,17 @@ async function loadPageSwitcher() {
     pages = (data && data.pages) || [];
   } catch (e) { return; }
   document.querySelectorAll('.page-switcher').forEach((sel) => {
-    sel.innerHTML = pages.map((p) =>
-      '<option value="' + esc(p.key) + '"' + (p.key === CASE_KEY ? ' selected' : '') + '>' +
-      esc((p.title || p.key) + ' · ' + p.key) + '</option>'
-    ).join('');
+    // CASE_KEY 为空（未选定页面）时：不默认选中第一个已有页面（会误导用户误以为在编辑它），
+    // 而是显示「请先选择页面」占位项，从源头避免「未新建页面却挂着已有页面标签」的交互问题。
+    if (!CASE_KEY) {
+      sel.innerHTML = '<option value="">— 请先选择页面 —</option>' +
+        '<option value="" disabled>在右侧「页面管理」中选择或新建页面</option>';
+    } else {
+      sel.innerHTML = pages.map((p) =>
+        '<option value="' + esc(p.key) + '"' + (p.key === CASE_KEY ? ' selected' : '') + '>' +
+        esc((p.title || p.key) + ' · ' + p.key) + '</option>'
+      ).join('');
+    }
     sel.onchange = () => switchPageWithConfirm(sel.value);
   });
 }
@@ -7932,10 +7935,41 @@ async function submitPgNew() {
       type: $('#pgNewType').value,
       level: $('#pgNewLevel').value
     });
-    toast('页面已创建', 'success');
+    toast('页面已创建，正在进入板块编辑', 'success');
     closeModal('pgModalNew');
+    // 创建后自动切换到该页板块编辑，避免用户在「未选定页面」状态下空加板块而无法保存
+    await switchCase(key, $('#pgNewTitle').value.trim() || key);
     loadPages();
   } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ===== 就地新建页面（板块管理空白态，未选定页面时的「多一条路新建」入口） ===== */
+async function submitCreatePageInline() {
+  const key = $('#cipKey').value.trim();
+  const title = $('#cipTitle').value.trim();
+  if (!key) { toast('页面 Key 必填'); return; }
+  if (!/^[a-zA-Z0-9_-]+$/.test(key)) { toast('Key 只允许字母/数字/下划线/短横'); return; }
+  const btn = $('#cipSubmit');
+  const oldText = btn.textContent;
+  btn.disabled = true; btn.textContent = '创建中...';
+  try {
+    await apiGlobal('/api/pages/new', 'POST', {
+      key: key,
+      title: title || key,
+      type: $('#cipType').value,
+      level: $('#cipLevel').value
+    });
+    toast('页面已创建，正在进入板块编辑', 'success');
+    // 清空表单，便于下次新建
+    $('#cipKey').value = '';
+    $('#cipTitle').value = '';
+    await switchCase(key, title || key);
+    loadPages();
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = oldText;
+  }
 }
 
 async function openPgCopy(fromKey) {
@@ -8142,6 +8176,8 @@ async function afterAuth() {
     await loadNavMenuState();
     await loadLetsTalkSharedState();
     await loadThemeState();
+    // 未选定页面时禁用保存按钮：此时没有可写入的页面目标，防止误以为在编辑已有页面而误保存
+    syncSaveButtonState();
     showView('pages');
     return;
   }

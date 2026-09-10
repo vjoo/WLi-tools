@@ -2,6 +2,10 @@
 server.py
 server_data.json
 
+# 片源探测服务：本机运行的服务脚本，属「本地服务脚本」范畴，不进公开仓库
+# （tools/source-probe.html 页面会上线，访问者需自备此脚本才能跑通）
+tools/probe_server.py
+
 # 工具页双通道数据文件（规则 29：用户私有数据不上云，由 server.py 运行时创建）
 tools/prompt-library-data.json
 tools/prompt-library-data.json.tmp
