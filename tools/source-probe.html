@@ -45,6 +45,7 @@
     margin-top: 9px; text-align: center; font-size: var(--fs-xs); color: var(--ink-quaternary);
     font-variant-numeric: tabular-nums;
   }
+  .progress-text .spin { width: 10px; height: 10px; color: var(--ink-tertiary); }
   @media (prefers-reduced-motion: reduce) {
     .progress-bar.indet { animation: none; width: 100%; opacity: 0.35; }
   }
@@ -71,13 +72,20 @@
   .result-title { font-size: var(--fs-lg); font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
   .result-sub { font-size: var(--fs-xs); color: var(--ink-quaternary); }
   .tbl-wrap { overflow-x: auto; border: 1px solid var(--border-light); border-radius: var(--radius-md); }
-  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); min-width: 640px; }
+  table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); min-width: 760px; table-layout: fixed; }
   th {
     text-align: left; padding: 11px 14px; font-weight: 500; font-size: var(--fs-xs);
     color: var(--ink-tertiary); background: var(--bg); border-bottom: 1px solid var(--border-light);
     white-space: nowrap;
   }
   td { padding: 13px 14px; border-bottom: 1px solid var(--border-light); color: var(--ink); vertical-align: middle; }
+  /* 定宽列：只有「地址」列吸收弹性空间，长 URL 既挤不扁「复制」也不撑破表格 */
+  th:nth-child(1), td:nth-child(1) { width: 52px; }
+  th:nth-child(2), td:nth-child(2) { width: 110px; }
+  th:nth-child(3), td:nth-child(3) { width: 118px; white-space: nowrap; }
+  th:nth-child(4), td:nth-child(4) { width: 112px; white-space: nowrap; }
+  th:nth-child(5), td:nth-child(5) { width: 130px; white-space: nowrap; }
+  th:nth-child(7), td:nth-child(7) { width: 84px; white-space: nowrap; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr.best { background: rgba(52, 199, 89, 0.06); }
   .rank {
@@ -86,11 +94,11 @@
     font-size: var(--fs-xs); color: var(--ink-tertiary); font-weight: 500;
   }
   tr.best .rank { background: var(--green); color: #fff; }
-  .name-cell { font-weight: 500; max-width: 160px; }
+  .name-cell { font-weight: 500; overflow: hidden; }
   .name-cell .sub { font-weight: 400; font-size: var(--fs-xs); color: var(--ink-quaternary); margin-top: 2px; }
   .url-cell {
     font-family: 'SF Mono', SFMono-Regular, Consolas, Menlo, monospace; font-size: var(--fs-xs);
-    color: var(--ink-tertiary); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--ink-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .speed-val { font-size: var(--fs-md); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
   .speed-val .unit { font-size: var(--fs-xs); font-weight: 400; color: var(--ink-tertiary); margin-left: 2px; }
@@ -105,6 +113,7 @@
   .copy-btn {
     border: 1px solid var(--border-light); background: var(--bg-white); color: var(--ink-secondary);
     border-radius: 6px; padding: 4px 10px; font-size: var(--fs-xs); cursor: pointer; transition: all 0.2s;
+    white-space: nowrap;
   }
   .copy-btn:hover { border-color: var(--ink); color: var(--ink); }
   .empty { padding: 40px; text-align: center; color: var(--ink-quaternary); font-size: var(--fs-sm); }
@@ -134,7 +143,7 @@
 
     <div class="progress" id="progress" hidden data-page-node-id="Nq1ProgressWrapX">
       <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
-      <div class="progress-text" id="progressText"></div>
+      <div class="progress-text" id="progressText"><span class="spin"></span><span id="progressLabel"></span></div>
     </div>
 
     <div class="log" id="log" data-page-node-id="QzqR7o0pzmo55aXf66upoX"></div>
@@ -266,7 +275,8 @@
     } else if (r.ok) {
       ra.innerHTML = '<span class="pill green">可用</span>';
     } else {
-      ra.innerHTML = '<span class="pill red">' + escapeHtml((r.error || '不可用').slice(0, 14)) + '</span>';
+      var full = r.error || '不可用';
+      ra.innerHTML = '<span class="pill red" title="' + escapeHtml(full) + '">' + failLabel(full) + '</span>';
     }
     tr.appendChild(ra);
 
@@ -316,6 +326,24 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+
+  // 失败原因压成 ≤4 字标签（表格列窄，长文案会撑破布局）；完整原因挂在 pill 的 title 上，悬停可看
+  function failLabel(e) {
+    e = String(e || '');
+    if (/速度为 0/.test(e)) return '零速度';
+    if (/timeout|timed out|超时/i.test(e)) return '超时';
+    if (/没找到.*地址/.test(e)) return '未找到源';
+    if (/未给出直链/.test(e)) return '无直链';
+    if (/挑战页|突破挑战/.test(e)) return '挑战失败';
+    if (/无可用 variant/i.test(e)) return '无清晰度';
+    if (/未找到分片/.test(e)) return '无分片';
+    if (/采样不足/.test(e)) return '采样不足';
+    var m = e.match(/\b(\d{3})\b/);
+    if (m) return '源' + m[1];
+    if (/返回 0\b|connect|连接/i.test(e)) return '连不上';
+    if (/失败/.test(e)) return '请求失败';
+    return '不可用';
+  }
   function copy(text) {
     if (!text) return;
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -336,16 +364,19 @@
   var urlInput = $('urlInput'), btnProbe = $('btnProbe');
   var btnLabel = btnProbe.textContent;
   var progressEl = $('progress'), progressBar = $('progressBar'), progressText = $('progressText');
+  var progressLabel = $('progressLabel');
+  var progressSpin = progressText.querySelector('.spin');
 
   var rowList = [];     // 与后端 items 同序（流式过程中不重排，完成后才按速度排）
   var totalN = 0;
   var running = false;
   var doneSeen = false;
 
-  // mode: 'indet'（总时长未知）| 'det'（已知总数）
-  function prog(mode, cur, total, text) {
+  // mode: 'indet'（总时长未知）| 'det'（已知总数）；spinning=false 时收掉旋转图标（完成态）
+  function prog(mode, cur, total, text, spinning) {
     progressEl.hidden = false;
-    progressText.textContent = text;
+    progressLabel.textContent = text || '';
+    progressSpin.hidden = spinning === false;
     if (mode === 'indet') {
       progressBar.classList.add('indet');
       progressBar.style.width = '';
@@ -354,7 +385,7 @@
       progressBar.style.width = (total ? Math.round(cur / total * 100) : 0) + '%';
     }
   }
-  function progDone() { prog('det', 1, 1, ''); }
+  function progDone() { prog('det', 1, 1, '', false); }
   function progHide() {
     progressEl.hidden = true;
     progressBar.classList.remove('indet');
@@ -398,7 +429,7 @@
       doneSeen = true;
       log('✓ 测速完成，耗时 ' + ev.elapsed + 's（可用 ' + ev.ok + '/' + ev.total + '）', 'ok');
       progDone();
-      progressText.textContent = '完成 · 共 ' + ev.total + ' 条，用时 ' + ev.elapsed + 's';
+      progressLabel.textContent = '完成 · 共 ' + ev.total + ' 条，用时 ' + ev.elapsed + 's';
       btnProbe.textContent = btnLabel;
       if (ev.speeds && ev.speeds.length) render(ev.speeds);
     }
@@ -438,40 +469,17 @@
     });
   }
 
-  // 线上（https）页面访问 127.0.0.1 受 Chrome 142+「本地网络访问(LNA)」限制：
-  // 需要用户授权 loopback-network（Chrome 145+ 显示为「设备上的应用」）。
-  // 一旦被拒绝过，Chrome 不会再次弹窗，请求会永久静默失败 → 必须给出准确指引。
-  function lnaState() {
-    if (location.protocol !== 'https:' || !navigator.permissions || !navigator.permissions.query) {
-      return Promise.resolve('n/a');
-    }
-    return navigator.permissions.query({ name: 'loopback-network' })
-      .then(function (p) { return p.state; })
-      .catch(function () {
-        return navigator.permissions.query({ name: 'local-network-access' })
-          .then(function (p) { return p.state; })
-          .catch(function () { return 'unknown'; });
-      });
-  }
-
-  function logLnaHint(state) {
-    if (state === 'denied') {
-      log('⚠ 浏览器已拒绝本页访问本机网络，请求会直接失败（点过「阻止」后不会再弹窗）。', 'err');
-    } else {
-      log('× 线上页面访问本机服务被浏览器拦截（Chrome 142+ 的本地网络访问限制）。', 'err');
-    }
-    log('  解决：点地址栏左侧图标 → 网站设置 → 把「设备上的应用」/「本地网络访问」改为「允许」→ 刷新本页。', 'err');
-    log('  或在本地直接打开 http://127.0.0.1:8080/tools/source-probe.html（http 页面不受此限制）。', 'err');
-  }
-
-  // 非线上页面的连接失败：把「服务在哪」讲清楚（局域网/手机场景最容易卡在这）
+  // 连接失败：只给一句能落地的原因
   function logConnHint(msg) {
+    if (location.protocol === 'https:') {
+      log('× 浏览器拦截了对本机服务的访问（网站设置里允许「本地网络访问」）', 'err');
+      return;
+    }
     log('× 连不上解析服务（' + API_BASE + '）：' + msg, 'err');
-    log('  ① 服务没启动 → 在 tools 目录执行：python probe_server.py', 'err');
     if (isLanHost(location.hostname)) {
-      log('  ② 手机/平板访问：确认服务在跑（默认已监听 0.0.0.0）、与电脑同一 Wi-Fi、防火墙放行 TCP 8899。', 'err');
+      log('  确认服务在跑、与电脑同一 Wi-Fi、防火墙放行 TCP 8899。', 'err');
     } else {
-      log('  ② 换过端口 → 地址后加 ?api=http://127.0.0.1:<端口> 重新打开本页。', 'err');
+      log('  服务没启动 → 在 tools 目录执行：python probe_server.py', 'err');
     }
   }
 
@@ -491,15 +499,9 @@
     prog('indet', 0, 0, '正在请求播放页…');
     log('POST ' + API_BASE + '/api/probe-stream');
 
-    lnaState().then(function (st) {
-      if (st === 'denied') logLnaHint('denied');
-      return consume(url);
-    }).catch(function (e) {
+    consume(url).catch(function (e) {
       var msg = String((e && e.message) || e);
-      var netErr = /Failed to fetch|NetworkError|Load failed|ERR_/i.test(msg);
-      if (location.protocol === 'https:' && netErr) {
-        logLnaHint(null);            // 线上页面：几乎必然是 LNA 拦截
-      } else if (netErr) {
+      if (/Failed to fetch|NetworkError|Load failed|ERR_/i.test(msg)) {
         logConnHint(msg);
       } else {
         log('× 请求失败：' + msg, 'err');
